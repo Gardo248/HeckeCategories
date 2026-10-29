@@ -15,14 +15,15 @@
 #############################################################
 
 # riflessione s_i sul vettore v (coordinate nelle radici semplici)
-BindGlobal( "FreeBS_Reflect",
+BindGlobal( "ReflectionInGeomRepr",
 function( B, i, v )
-  local w;
-  w := ShallowCopy( v );
-  w[i] := v[i] - 2 * Sum( [ 1 .. Length( v ) ], j -> B[i][j] * v[j] );
-  return w;
+  local sv;
+  sv := ShallowCopy( v );
+  sv[i] := v[i] - 2 * Sum( [ 1 .. Length( v ) ], j -> B[i][j] * v[j] );
+  return sv;
 end );
 
+#TODO: penso che questo sia superfluo, questo controllo va fatto in IsWellDefined
 BindGlobal( "FreeBS_CheckWord",
 function( G, x )
   local n;
@@ -43,9 +44,9 @@ function( G, I, i )
   alpha := List( [ 1 .. n ], j -> 0 );
   alpha[i] := 1;
   if alpha in I then
-    J := List( Filtered( I, v -> v <> alpha ), v -> FreeBS_Reflect( B, i, v ) );
+    J := List( Filtered( I, v -> v <> alpha ), v -> ReflectionInGeomRepr( B, i, v ) );
   else
-    J := Concatenation( [ alpha ], List( I, v -> FreeBS_Reflect( B, i, v ) ) );
+    J := Concatenation( [ alpha ], List( I, v -> ReflectionInGeomRepr( B, i, v ) ) );
   fi;
   return Set( J );
 end );
@@ -81,7 +82,7 @@ function( G, I )
         # s_i e' il piu' piccolo descent destro: w = w' s_i
         Add( word, i );
         I := Set( List( Filtered( I, v -> v <> alphas[i] ),
-                        v -> FreeBS_Reflect( B, i, v ) ) );
+                        v -> ReflectionInGeomRepr( B, i, v ) ) );
         found := true;
         break;
       fi;
