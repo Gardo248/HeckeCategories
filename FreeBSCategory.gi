@@ -39,7 +39,7 @@ InstallMethod( InversionSetAfterRightMultiplication,
   [ IsCoxeterGroup, IsList, IsPosInt ],
 function( G, I, i )
   local B, n, alpha, J;
-  B := CoxeterBilinearForm( CoxeterMatrix( G ) );
+  B := CoxeterBilinearForm( G );
   n := Length( B );
   alpha := List( [ 1 .. n ], j -> 0 );
   alpha[i] := 1;
@@ -70,9 +70,8 @@ InstallMethod( CoxeterNormalFormOfInversionSet,
   "for a Coxeter group and an inversion set",
   [ IsCoxeterGroup, IsList ],
 function( G, I )
-  local B, n, alphas, word, i, found;
-  B := CoxeterBilinearForm( CoxeterMatrix( G ) );
-  n := Length( B );
+  local n, alphas, word, i, found;
+  n := Length( CoxeterMatrix( G ) );
   alphas := IdentityMat( n );
   word := [ ];
   while not IsEmpty( I ) do
@@ -81,8 +80,7 @@ function( G, I )
       if alphas[i] in I then
         # s_i e' il piu' piccolo descent destro: w = w' s_i
         Add( word, i );
-        I := Set( List( Filtered( I, v -> v <> alphas[i] ),
-                        v -> ReflectionInGeomRepr( B, i, v ) ) );
+        I := InversionSetAfterRightMultiplication( G, I, i );
         found := true;
         break;
       fi;

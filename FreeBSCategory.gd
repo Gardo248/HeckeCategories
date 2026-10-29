@@ -82,7 +82,7 @@ DeclareAttribute( "BSWord", IsObjectInFreeBSCategory );
 DeclareAttribute( "BSLayers", IsMorphismInFreeBSCategory );
 
 # Costruttore della categoria
-DeclareAttribute( "FreeBSCategory", [ IsCoxeterGroup ] );
+DeclareAttribute( "FreeBSCategory", IsCoxeterGroup );
 
 # L'oggetto corrispondente alla parola x
 DeclareOperation( "BSObject", [ IsFreeBSCategory, IsList ] );

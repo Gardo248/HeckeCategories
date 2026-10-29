@@ -146,12 +146,18 @@ CheckEqual("IsFiniteCoxeterMatrix A3",
   IsFiniteCoxeterMatrix(ChainMatrix(3,[3,3])), true);
 CheckEqual("IsFiniteCoxeterMatrix affine",
   IsFiniteCoxeterMatrix(GraphMatrix(3,[[1,2,3],[2,3,3],[1,3,3]])), false);
+
+#############################################################
+# 5b. Forma bilineare (attributo del gruppo)
+#############################################################
 CheckEqual("forma bilineare A2",
-  CoxeterBilinearForm(ChainMatrix(2,[3])), [[1,-1/2],[-1/2,1]]);
+  CoxeterBilinearForm(CoxeterGroupByMatrix(ChainMatrix(2,[3]))),
+  [[1,-1/2],[-1/2,1]]);
 CheckEqual("forma bilineare con infinity",
-  CoxeterBilinearForm([[1,infinity],[infinity,1]]), [[1,-1],[-1,1]]);
+  CoxeterBilinearForm(CoxeterGroupByMatrix([[1,infinity],[infinity,1]])),
+  [[1,-1],[-1,1]]);
 CheckEqual("forma bilineare m=2 (ortogonali)",
-  CoxeterBilinearForm([[1,2],[2,1]]), [[1,0],[0,1]]);
+  CoxeterBilinearForm(CoxeterGroupByMatrix([[1,2],[2,1]])), [[1,0],[0,1]]);
 
 #############################################################
 # 6. Rappresentazione di riflessioni
@@ -160,14 +166,14 @@ G := CoxeterGroupByMatrix(ChainMatrix(3,[3,3]));
 rho := CoxeterReflectionRepresentation(G);
 CheckEqual("rho iniettiva (A3)", IsInjective(rho), true);
 CheckEqual("rho |Im| (A3)", Size(Image(rho)), 24);
-mats := CoxeterReflectionMatrices(ChainMatrix(3,[3,3]));
+mats := CoxeterReflectionMatrices(G);
 CheckEqual("riflessioni: ordine 2", ForAll(mats, A -> Order(A) = 2), true);
 CheckEqual("riflessioni: det -1", ForAll(mats, A -> DeterminantMat(A) = -1), true);
 CheckEqual("ordine s1 s2", Order(mats[1]*mats[2]), 3);
 CheckEqual("ordine s1 s3", Order(mats[1]*mats[3]), 2);
 
 # H3 (usa sqrt(5)): ordini dei prodotti
-mats := CoxeterReflectionMatrices(ChainMatrix(3,[5,3]));
+mats := CoxeterReflectionMatrices(CoxeterGroupByMatrix(ChainMatrix(3,[5,3])));
 CheckEqual("H3 ordine s1 s2", Order(mats[1]*mats[2]), 5);
 CheckEqual("H3 ordine s2 s3", Order(mats[2]*mats[3]), 3);
 CheckEqual("H3 ordine s1 s3", Order(mats[1]*mats[3]), 2);

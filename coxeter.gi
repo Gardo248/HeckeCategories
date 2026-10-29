@@ -3,15 +3,18 @@
 #############################################################
 
 #############################################################
-# Funzioni sulla matrice di Coxeter
+# Forma bilineare e riflessioni (attributi del gruppo)
 #############################################################
 
 #TUTTO VA CONTROLLATO!!!!!!!!!!!!!!!!!!!!!!!
 
 # Forma bilineare B(e_i,e_j) = -cos(pi/m_ij), in forma esatta
 # (numeri ciclotomici). Se m_ij = infinity si pone B = -1.
-InstallGlobalFunction(CoxeterBilinearForm, function(M)
-  local n, B, i, j, m;
+InstallMethod(CoxeterBilinearForm, "for a Coxeter group",
+  [IsCoxeterGroup],
+function(G)
+  local M, n, B, i, j, m;
+  M := CoxeterMatrix(G);
   n := Length(M);
   B := List([1..n], i -> List([1..n], j -> 0));
   for i in [1..n] do
@@ -30,10 +33,12 @@ end);
 # Matrici (azione a destra sui vettori riga) delle riflessioni
 #   s_i : v -> v - 2 B(e_i, v) e_i
 # La riga j dell'i-esima matrice e' l'immagine di e_j.
-InstallGlobalFunction(CoxeterReflectionMatrices, function(M)
+InstallMethod(CoxeterReflectionMatrices, "for a Coxeter group",
+  [IsCoxeterGroup],
+function(G)
   local n, B, mats, i, j, A;
-  n := Length(M);
-  B := CoxeterBilinearForm(M);
+  B := CoxeterBilinearForm(G);
+  n := Length(B);
   mats := [];
   for i in [1..n] do
     A := IdentityMat(n);
@@ -44,6 +49,10 @@ InstallGlobalFunction(CoxeterReflectionMatrices, function(M)
   od;
   return mats;
 end);
+
+#############################################################
+# Funzioni sulla matrice di Coxeter
+#############################################################
 
 # Un gruppo di Coxeter e' finito se e solo se la forma B e'
 # definita positiva. Test numerico (eliminazione gaussiana in
@@ -155,7 +164,7 @@ function(G)
   if Length(CoxeterMatrix(G)) = 0 then
     Error("rank 0: no reflection representation");
   fi;
-  mats := CoxeterReflectionMatrices(CoxeterMatrix(G));
+  mats := CoxeterReflectionMatrices(G);
   H := Group(mats);
   # Per il teorema di Tits le matrici soddisfano le relazioni e la
   # rappresentazione e' fedele: si puo' usare la versione NC.
@@ -174,7 +183,7 @@ function(G)
   if not IsFiniteCoxeterMatrix(M) then
     Error("the Coxeter group is infinite");
   fi;
-  mats  := CoxeterReflectionMatrices(M);
+  mats  := CoxeterReflectionMatrices(G);
   H     := Group(mats);
   # insieme delle radici = unione delle orbite dei vettori e_i
   roots := Set(Concatenation(

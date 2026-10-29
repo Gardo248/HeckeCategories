@@ -77,7 +77,7 @@ CheckAgainstFp( [[1,7],[7,1]], "I2(7)", 60, 12 );           # usa cos(pi/7)
 # ---------- 3. gruppi infiniti: confronto con l'uguaglianza ESATTA delle matrici di Tits ----------
 CheckAgainstTits := function( M, name, N, L, infinite_irreducible )
   local mats, n, k, w1, w2, G, mat, same;
-  G := CoxeterGroupByMatrix( M );  mats := CoxeterReflectionMatrices( M );  n := Length( M );
+  G := CoxeterGroupByMatrix( M );  mats := CoxeterReflectionMatrices( G );  n := Length( M );
   mat := w -> Product( mats{ w }, IdentityMat( n ) );
   for k in [ 1 .. N ] do
     w1 := List( [ 1 .. Random( [ 0 .. L ] ) ], i -> Random( [ 1 .. n ] ) );

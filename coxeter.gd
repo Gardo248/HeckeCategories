@@ -20,7 +20,11 @@ DeclareAttribute("CoxeterPermutationRepresentation", IsCoxeterGroup);
 DeclareOperation("CoxeterGroupByMatrix", [IsList]);
 DeclareOperation("CoxeterGroupByMatrix", [IsList, IsList]);
 
+# Forma bilineare di Coxeter (esatta) e matrici delle riflessioni
+# semplici nella rappresentazione geometrica: calcolate una sola
+# volta per gruppo (valori immutabili).
+DeclareAttribute("CoxeterBilinearForm", IsCoxeterGroup);
+DeclareAttribute("CoxeterReflectionMatrices", IsCoxeterGroup);
+
 # Funzioni che lavorano sulla sola matrice di Coxeter M
-DeclareGlobalFunction("CoxeterBilinearForm");
-DeclareGlobalFunction("CoxeterReflectionMatrices");
 DeclareGlobalFunction("IsFiniteCoxeterMatrix");
