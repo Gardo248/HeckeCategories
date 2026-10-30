@@ -32,17 +32,17 @@ Check( "NF ss = e", CoxeterNormalFormOfWord( G, [s,s] ) = [] );
 Check( "NF sts = tst", CoxeterNormalFormOfWord( G, [s,t,s] ) = CoxeterNormalFormOfWord( G, [t,s,t] ) );
 Check( "NF sts = [1,2,1]", CoxeterNormalFormOfWord( G, [t,s,t] ) = [1,2,1] );
 Check( "|I(sts)| = 3", Length( InversionSetOfCoxeterWord( G, [s,t,s] ) ) = 3 );
-Check( "Hom(e,e)", LightLeafIndicesOfHom( G, [], [] ) = [ [ [], [], [] ] ] );
-Check( "Hom(s,s)", Set( LightLeafIndicesOfHom( G, [s], [s] ) ) = Set( [ T("0","0",[]), T("1","1",[1]) ] ) );
-Check( "Hom(t,t)", Set( LightLeafIndicesOfHom( G, [t], [t] ) ) = Set( [ T("0","0",[]), T("1","1",[2]) ] ) );
-Check( "Hom(ss,s)", Set( LightLeafIndicesOfHom( G, [s,s], [s] ) ) =
+Check( "Hom(e,e)", DoubleLeavesIndicesOfHom( G, [], [] ) = [ [ [], [], [] ] ] );
+Check( "Hom(s,s)", Set( DoubleLeavesIndicesOfHom( G, [s], [s] ) ) = Set( [ T("0","0",[]), T("1","1",[1]) ] ) );
+Check( "Hom(t,t)", Set( DoubleLeavesIndicesOfHom( G, [t], [t] ) ) = Set( [ T("0","0",[]), T("1","1",[2]) ] ) );
+Check( "Hom(ss,s)", Set( DoubleLeavesIndicesOfHom( G, [s,s], [s] ) ) =
       Set( [ T("00","0",[]), T("11","0",[]), T("10","1",[1]), T("01","1",[1]) ] ) );
 user := [ ["000","000",[]],["101","000",[]],["000","110",[]],["101","110",[]],
           ["000","101",[]],["101","101",[]],["000","011",[]],["101","011",[]],
           ["100","100",[1]],["100","010",[1]],["100","001",[1]],["100","111",[1]],
           ["001","100",[1]],["001","010",[1]],["001","001",[1]],["001","111",[1]] ];
 user := List( user, a -> T( a[1], a[2], a[3] ) );
-got := LightLeafIndicesOfHom( G, [s,t,s], [s,s,s] );
+got := DoubleLeavesIndicesOfHom( G, [s,t,s], [s,s,s] );
 Check( "Hom(sts,sss): 16 generatori come da elenco", Length( got ) = 16 and Set( got ) = Set( user ) );
 
 # ---------- 2. confronto con l'oracolo ESATTO del gruppo fp (gruppi finiti) ----------
@@ -105,7 +105,7 @@ CheckAgainstTits( [[1,3,2,2],[3,1,3,3],[2,3,1,2],[2,3,2,1]], "D4 (finito, via Ti
 
 # ---------- 4. gruppo infinito: conteggio a mano ----------
 G := CoxeterGroupByMatrix( [[1,4,2],[4,1,4],[2,4,1]] );
-Check( "affine B2~, Hom(121,121) ha 12 generatori", Length( LightLeafIndicesOfHom( G, [1,2,1], [1,2,1] ) ) = 12 );
+Check( "affine B2~, Hom(121,121) ha 12 generatori", Length( DoubleLeavesIndicesOfHom( G, [1,2,1], [1,2,1] ) ) = 12 );
 Check( "affine B2~, braid m=4", CoxeterNormalFormOfWord( G, [1,2,1,2] ) = CoxeterNormalFormOfWord( G, [2,1,2,1] ) );
 Check( "affine B2~, commutazione", CoxeterNormalFormOfWord( G, [1,3] ) = CoxeterNormalFormOfWord( G, [3,1] ) );
 Check( "affine B2~, 121 <> 212", CoxeterNormalFormOfWord( G, [1,2,1] ) <> CoxeterNormalFormOfWord( G, [2,1,2] ) );
@@ -148,10 +148,10 @@ Check( "generatori distinti",
        ForAll( Combinations( [ 1 .. 16 ], 2 ), p -> not EqM( hom[p[1]], hom[p[2]] ) ) );
 Check( "sorgente e bersaglio dei generatori",
        ForAll( hom, h -> BSWord( Source( h ) ) = [1,2,1] and BSWord( Range( h ) ) = [1,1,1] ) );
-Check( "numero di generatori = LightLeafIndicesOfHom",
+Check( "numero di generatori = DoubleLeavesIndicesOfHom",
        ForAll( [ [ [], [] ], [ [1], [1] ], [ [1,1], [1] ], [ [1,2,1], [2,1,2] ] ],
                p -> Length( LightLeafMorphisms( D, p[1], p[2] ) ) =
-                    Length( LightLeafIndicesOfHom( G, p[1], p[2] ) ) ) );
+                    Length( DoubleLeavesIndicesOfHom( G, p[1], p[2] ) ) ) );
 
 dot  := LightLeafMorphism( D, [1], [], [ [0], [], [] ] );   # s -> vuoto
 udot := LightLeafMorphism( D, [], [1], [ [], [0], [] ] );   # vuoto -> s
@@ -222,7 +222,7 @@ G3 := CoxeterGroupByMatrix( [[1,3,3],[3,1,3],[3,3,1]] );
 D3 := FreeBSCategory( G3 );
 Check( "affine A2~: Hom(123,123)",
        Length( LightLeafMorphisms( D3, [1,2,3], [1,2,3] ) ) =
-       Length( LightLeafIndicesOfHom( G3, [1,2,3], [1,2,3] ) ) );
+       Length( DoubleLeavesIndicesOfHom( G3, [1,2,3], [1,2,3] ) ) );
 
 # errori
 CheckErr( "terna non valida -> errore", { } -> LightLeafMorphism( D, [1], [1], [ [1], [0], [1] ] ) );

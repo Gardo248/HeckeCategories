@@ -42,8 +42,16 @@ DeclareOperation( "CoxeterNormalFormOfWord",
 DeclareOperation( "SubexpressionsOfCoxeterWord",
                   [ IsCoxeterGroup, IsList ] );
 
+# Sottoespressioni di x raggruppate per punto d'arrivo: coppia
+# [ keys, groups ], dove keys e' la lista ordinata (senza ripetizioni)
+# dei punti d'arrivo w (in forma normale) e groups[j] e' la lista delle
+# sottoespressioni e (liste 0/1) che arrivano a keys[j], nello stesso
+# ordine in cui compaiono in SubexpressionsOfCoxeterWord.
+DeclareOperation( "SubexpressionsOfCoxeterWordByEndpoint",
+                  [ IsCoxeterGroup, IsList ] );
+
 # Generatori di Hom(x,y): lista ordinata delle terne [ e, f, w ].
-DeclareOperation( "LightLeafIndicesOfHom",
+DeclareOperation( "DoubleLeavesIndicesOfHom",
                   [ IsCoxeterGroup, IsList, IsList ] );
 
 #############################################################
@@ -91,7 +99,7 @@ DeclareOperation( "BSObject", [ IsFreeBSCategory, IsList ] );
 DeclareOperation( "LightLeafMorphism",
                   [ IsFreeBSCategory, IsList, IsList, IsList ] );
 
-# Tutti i generatori di Hom(x,y), nell'ordine di LightLeafIndicesOfHom
+# Tutti i generatori di Hom(x,y), nell'ordine di DoubleLeavesIndicesOfHom
 DeclareOperation( "LightLeafMorphisms",
                   [ IsFreeBSCategory, IsList, IsList ] );
 

@@ -87,6 +87,7 @@ function( G, I )
     od;
     if not found then
       Error( "not a valid inversion set: no right descent found" );
+      #TODO: ATTENTION this checks only that the set at every step contains a simple root, that does not guarantee that the set is actually an inversion set of some element of W. Maybe there will be more test about it
     fi;
   od;
   return Reversed( word );
@@ -100,6 +101,10 @@ InstallMethod( CoxeterNormalFormOfWord,
                    InversionSetOfCoxeterWord( G, word ) ) );
 
 ##
+#the function uses a recursion to find all the subexpressions of a word, and, step by step, it computes the inversion set of the subexpression.
+#Then it computes the normal form of the inversion set, just once for each inversion set. To do that it uses a cache key,
+#which contains all the inversion sets whose normal form has already been computed, and a cache value, which contains the normal forms of the inversion sets in the cache key.
+#The function returns a list of pairs [e, w], where e is a 0/1 list representing the subexpression and w is the normal form of the inversion set of that subexpression.
 InstallMethod( SubexpressionsOfCoxeterWord,
   "for a Coxeter group and a word",
   [ IsCoxeterGroup, IsList ],
@@ -107,7 +112,7 @@ function( G, x )
   local n, leaves, cache_keys, cache_vals, walk, res, leaf, p;
   FreeBS_CheckWord( G, x );
   n := Length( x );
-  leaves := [ ];                      # liste [ e, I ]
+  leaves := [ ];                      # lists [ e, I ]
   walk := function( k, e, I )
     if k > n then
       Add( leaves, [ ShallowCopy( e ), I ] );
@@ -138,20 +143,44 @@ function( G, x )
 end );
 
 ##
-InstallMethod( LightLeafIndicesOfHom,
+# Raggruppa le sottoespressioni di x per punto d'arrivo: restituisce
+# [ keys, groups ], con keys = punti d'arrivo distinti (ordinati) e
+# groups[j] = sottoespressioni che arrivano a keys[j].
+InstallMethod( SubexpressionsOfCoxeterWordByEndpoint,
+  "for a Coxeter group and a word",
+  [ IsCoxeterGroup, IsList ],
+function( G, x )
+  local subs, endpoints, fibers, a;
+  subs := SubexpressionsOfCoxeterWord( G, x );
+  endpoints := Set( List( subs, a -> a[2] ) );
+  fibers := List( endpoints, w -> [ ] );
+  for a in subs do
+    Add( fibers[ Position( endpoints, a[2] ) ], a[1] );
+  od;
+  return rec( endpoints := endpoints, fibers := fibers );
+end );
+
+##
+# Si confrontano solo i gruppi di sottoespressioni di x e di y con lo
+# stesso punto d'arrivo w, invece di tutte le coppie.
+InstallMethod( DoubleLeavesIndicesOfHom,
   "for a Coxeter group and two words",
   [ IsCoxeterGroup, IsList, IsList ],
 function( G, x, y )
-  local sx, sy, res, a, b;
-  sx := SubexpressionsOfCoxeterWord( G, x );
-  sy := SubexpressionsOfCoxeterWord( G, y );
+  local gx, gy, res, j, p, w, e, f;
+  gx := SubexpressionsOfCoxeterWordByEndpoint( G, x );
+  gy := SubexpressionsOfCoxeterWordByEndpoint( G, y );
   res := [ ];
-  for a in sx do
-    for b in sy do
-      if a[2] = b[2] then
-        Add( res, [ a[1], b[1], a[2] ] );
-      fi;
-    od;
+  for j in [ 1 .. Length( gx.endpoints ) ] do
+    w := gx.endpoints[j];
+    p := Position( gy.endpoints, w );
+    if p <> fail then
+      for e in gx.fibers[j] do
+        for f in gy.fibers[p] do
+          Add( res, [ e, f, w ] );
+        od;
+      od;
+    fi;
   od;
   Sort( res );
   return res;
@@ -461,5 +490,5 @@ end );
 InstallMethod( LightLeafMorphisms,
   "for a free BS category and two words",
   [ IsFreeBSCategory, IsList, IsList ],
-  { D, x, y } -> List( LightLeafIndicesOfHom( UnderlyingCoxeterGroup( D ), x, y ),
+  { D, x, y } -> List( DoubleLeavesIndicesOfHom( UnderlyingCoxeterGroup( D ), x, y ),
                        t -> LightLeafMorphism( D, x, y, t ) ) );
