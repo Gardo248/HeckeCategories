@@ -1,10 +1,10 @@
 #############################################################
-# coxeter.g -- file di caricamento
+# coxeter.g -- loading file
 #
-# Uso (da GAP, con la directory di lavoro = quella dei file):
+# Usage (from GAP, with the working directory = that of the files):
 #   Read("coxeter.g");
-# Le dichiarazioni vanno lette PRIMA delle implementazioni.
-# Non si puo' rileggere nella stessa sessione (Declare*): riavvia GAP.
+# Declarations must be read BEFORE implementations.
+# It cannot be re-read in the same session (Declare*): restart GAP.
 #############################################################
 Read("coxeter.gd");
 Read("coxeter.gi");

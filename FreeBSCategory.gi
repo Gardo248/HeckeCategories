@@ -1,20 +1,20 @@
 #############################################################
-# FreeBSCategory.gi -- IMPLEMENTAZIONI
+# FreeBSCategory.gi -- IMPLEMENTATIONS
 #
-# Matematica (vedi la spiegazione allegata):
-#   B = forma bilineare di Coxeter, esatta (CoxeterBilinearForm).
-#   s_i agisce sui vettori di coordinate v = sum_j v_j alpha_j come
+# Mathematics (see the attached explanation):
+#   B = Coxeter bilinear form, exact (CoxeterBilinearForm).
+#   s_i acts on coordinate vectors v = sum_j v_j alpha_j as
 #       s_i(v) = v - 2 B(alpha_i, v) alpha_i,
-#   cioe' cambia solo la coordinata i-esima:
+#   i.e. it changes only the i-th coordinate:
 #       v_i  ->  v_i - 2 * sum_j B[i][j] * v_j.
-#   I(w) = { beta > 0 : w(beta) < 0 }.  Fatti (Tits, Humphreys 5.4-5.6):
-#     (1) s_i e' descent destro di w  <=>  alpha_i in I(w);
-#     (2) se alpha_i in I(w):  I(w s_i) = s_i( I(w) \ {alpha_i} );
-#         altrimenti:          I(w s_i) = { alpha_i } u s_i( I(w) ).
-#   Nessun confronto di segni: solo uguaglianza tra vettori esatti.
+#   I(w) = { beta > 0 : w(beta) < 0 }.  Facts (Tits, Humphreys 5.4-5.6):
+#     (1) s_i is a right descent of w  <=>  alpha_i in I(w);
+#     (2) if alpha_i in I(w):  I(w s_i) = s_i( I(w) \ {alpha_i} );
+#         otherwise:           I(w s_i) = { alpha_i } u s_i( I(w) ).
+#   No sign comparison: only equality between exact vectors.
 #############################################################
 
-# riflessione s_i sul vettore v (coordinate nelle radici semplici)
+# reflection s_i on the vector v (coordinates in the simple roots)
 BindGlobal( "ReflectionInGeomRepr",
 function( B, i, v )
   local sv;
@@ -23,11 +23,11 @@ function( B, i, v )
   return sv;
 end );
 
-#TODO: penso che questo sia superfluo, questo controllo va fatto in IsWellDefined
+#TODO: I think this is superfluous, this check should be done in IsWellDefined
 BindGlobal( "FreeBS_CheckWord",
-function( G, x )
+function( W, x )
   local n;
-  n := Length( CoxeterMatrix( G ) );
+  n := Length( CoxeterMatrix( W ) );
   if not ForAll( x, i -> IsPosInt( i ) and i <= n ) then
     Error( "the word must be a list of integers in [1..", n, "]" );
   fi;
@@ -37,9 +37,9 @@ end );
 InstallMethod( InversionSetAfterRightMultiplication,
   "for a Coxeter group, an inversion set and a generator index",
   [ IsCoxeterGroup, IsList, IsPosInt ],
-function( G, I, i )
+function( W, I, i )
   local B, n, alpha, J;
-  B := CoxeterBilinearForm( G );
+  B := CoxeterBilinearForm( W );
   n := Length( B );
   alpha := List( [ 1 .. n ], j -> 0 );
   alpha[i] := 1;
@@ -55,12 +55,12 @@ end );
 InstallMethod( InversionSetOfCoxeterWord,
   "for a Coxeter group and a word",
   [ IsCoxeterGroup, IsList ],
-function( G, word )
+function( W, word )
   local I, i;
-  FreeBS_CheckWord( G, word );
+  FreeBS_CheckWord( W, word );
   I := [ ];
   for i in word do
-    I := InversionSetAfterRightMultiplication( G, I, i );
+    I := InversionSetAfterRightMultiplication( W, I, i );
   od;
   return I;
 end );
@@ -69,18 +69,18 @@ end );
 InstallMethod( CoxeterNormalFormOfInversionSet,
   "for a Coxeter group and an inversion set",
   [ IsCoxeterGroup, IsList ],
-function( G, I )
+function( W, I )
   local n, alphas, word, i, found;
-  n := Length( CoxeterMatrix( G ) );
+  n := Length( CoxeterMatrix( W ) );
   alphas := IdentityMat( n );
   word := [ ];
   while not IsEmpty( I ) do
     found := false;
     for i in [ 1 .. n ] do
       if alphas[i] in I then
-        # s_i e' il piu' piccolo descent destro: w = w' s_i
+        # s_i is the smallest right descent: w = w' s_i
         Add( word, i );
-        I := InversionSetAfterRightMultiplication( G, I, i );
+        I := InversionSetAfterRightMultiplication( W, I, i );
         found := true;
         break;
       fi;
@@ -97,8 +97,8 @@ end );
 InstallMethod( CoxeterNormalFormOfWord,
   "for a Coxeter group and a word",
   [ IsCoxeterGroup, IsList ],
-  { G, word } -> CoxeterNormalFormOfInversionSet( G,
-                   InversionSetOfCoxeterWord( G, word ) ) );
+  { W, word } -> CoxeterNormalFormOfInversionSet( W,
+                   InversionSetOfCoxeterWord( W, word ) ) );
 
 ##
 #the function uses a recursion to find all the subexpressions of a word, and, step by step, it computes the inversion set of the subexpression.
@@ -108,9 +108,9 @@ InstallMethod( CoxeterNormalFormOfWord,
 InstallMethod( SubexpressionsOfCoxeterWord,
   "for a Coxeter group and a word",
   [ IsCoxeterGroup, IsList ],
-function( G, x )
+function( W, x )
   local n, leaves, cache_keys, cache_vals, walk, res, leaf, p;
-  FreeBS_CheckWord( G, x );
+  FreeBS_CheckWord( W, x );
   n := Length( x );
   leaves := [ ];                      # lists [ e, I ]
   walk := function( k, e, I )
@@ -122,11 +122,11 @@ function( G, x )
     walk( k + 1, e, I );
     Remove( e );
     Add( e, 1 );
-    walk( k + 1, e, InversionSetAfterRightMultiplication( G, I, x[k] ) );
+    walk( k + 1, e, InversionSetAfterRightMultiplication( W, I, x[k] ) );
     Remove( e );
   end;
   walk( 1, [ ], [ ] );
-  # la forma normale si calcola una sola volta per ogni insieme di inversioni
+  # the normal form is computed only once for each inversion set
   cache_keys := [ ];
   cache_vals := [ ];
   res := [ ];
@@ -134,7 +134,7 @@ function( G, x )
     p := Position( cache_keys, leaf[2] );
     if p = fail then
       Add( cache_keys, leaf[2] );
-      Add( cache_vals, CoxeterNormalFormOfInversionSet( G, leaf[2] ) );
+      Add( cache_vals, CoxeterNormalFormOfInversionSet( W, leaf[2] ) );
       p := Length( cache_keys );
     fi;
     Add( res, [ leaf[1], cache_vals[p] ] );
@@ -143,15 +143,15 @@ function( G, x )
 end );
 
 ##
-# Raggruppa le sottoespressioni di x per punto d'arrivo: restituisce
-# [ keys, groups ], con keys = punti d'arrivo distinti (ordinati) e
-# groups[j] = sottoespressioni che arrivano a keys[j].
+# Groups the subexpressions of x by endpoint: returns
+# rec( endpoints, fibers ), with endpoints = distinct endpoints (sorted)
+# and fibers[j] = subexpressions ending in endpoints[j].
 InstallMethod( SubexpressionsOfCoxeterWordByEndpoint,
   "for a Coxeter group and a word",
   [ IsCoxeterGroup, IsList ],
-function( G, x )
+function( W, x )
   local subs, endpoints, fibers, a;
-  subs := SubexpressionsOfCoxeterWord( G, x );
+  subs := SubexpressionsOfCoxeterWord( W, x );
   endpoints := Set( List( subs, a -> a[2] ) );
   fibers := List( endpoints, w -> [ ] );
   for a in subs do
@@ -161,15 +161,15 @@ function( G, x )
 end );
 
 ##
-# Si confrontano solo i gruppi di sottoespressioni di x e di y con lo
-# stesso punto d'arrivo w, invece di tutte le coppie.
+# Only the groups of subexpressions of x and of y with the same
+# endpoint w are compared, instead of all the pairs.
 InstallMethod( DoubleLeavesIndicesOfHom,
   "for a Coxeter group and two words",
   [ IsCoxeterGroup, IsList, IsList ],
-function( G, x, y )
+function( W, x, y )
   local gx, gy, res, j, p, w, e, f;
-  gx := SubexpressionsOfCoxeterWordByEndpoint( G, x );
-  gy := SubexpressionsOfCoxeterWordByEndpoint( G, y );
+  gx := SubexpressionsOfCoxeterWordByEndpoint( W, x );
+  gy := SubexpressionsOfCoxeterWordByEndpoint( W, y );
   res := [ ];
   for j in [ 1 .. Length( gx.endpoints ) ] do
     w := gx.endpoints[j];
@@ -188,51 +188,51 @@ end );
 
 #############################################################
 #############################################################
-# Parte II -- la categoria CAP FreeBSCategory( G )
+# Part II -- the CAP category FreeBSCategory( W )
 #
-# Torre:  FreeBSCategory( G )  =  ReinterpretationOfCategory( Syn ),
+# Tower:  FreeBSCategory( W )  =  ReinterpretationOfCategory( Syn ),
 #         Syn = SyntacticCategoryInDoctrines( "IsStrictMonoidalCategory" ).
 #
 # In Syn:
-#   generatore s_i    : ObjectConstructor( Syn, Pair( "ObjectConstructor", [ Syn, nome_i ] ) )
-#   parola x          : TensorProductOnListOfObjects( Syn, [ generatori ] )
-#                       (anche per |x| <= 1: e' la forma che Syn stesso
-#                        produce appiattendo i tensori)
+#   generator s_i     : ObjectConstructor( Syn, Pair( "ObjectConstructor", [ Syn, name_i ] ) )
+#   word x            : TensorProductOnListOfObjects( Syn, [ generators ] )
+#                       (also for |x| <= 1: it is the form that Syn itself
+#                        produces when flattening the tensors)
 #   light leaf        : MorphismConstructor( Syn, x, Pair( "MorphismConstructor",
 #                                            [ Syn, "LL[ x, y, e, f, w ]" ] ), y )
-#   strato [p,...]    : TensorProductOnListOfMorphisms( Syn, [ id_sinistra, LL, id_destra ] )
-#   morfismo          : composizione (PreCompose) degli strati
+#   layer [p,...]     : TensorProductOnListOfMorphisms( Syn, [ id_left, LL, id_right ] )
+#   morphism          : composition (PreCompose) of the layers
 #
-# Ritorno da Syn: il termine sintattico viene letto ricorsivamente e trasformato in una lista di strati, poi messo in forma canonica.
+# Back from Syn: the syntactic term is read recursively and turned into a list of layers, then put in canonical form.
 #############################################################
 
-# ---------- light leaves che sono identita' ----------
-# leaf = [ x, y, e, f, w ]: e' l'identita' di x se x = y e se e, f scelgono l'intera espressione.
+# ---------- light leaves that are identities ----------
+# leaf = [ x, y, e, f, w ]: it is the identity of x if x = y and if e, f choose the whole expression.
 BindGlobal( "FreeBS_IsIdentityLeaf",
   leaf -> leaf[1] = leaf[2] and ForAll( leaf[3], i -> i = 1 )
                             and ForAll( leaf[4], i -> i = 1 ) );
 
-# ---------- forma canonica (legge di scambio) ----------
+# ---------- canonical form (interchange law) ----------
 #
-# Strato l = [ p, x, y, e, f, w ]: agisce sulla parola u sostituendo
-# u{[p+1..p+|x|]} = x con y. Due strati consecutivi l1, l2 (prima l1)
-# si possono scambiare se l2 agisce interamente a sinistra
-# (p2 + |x2| <= p1) o interamente a destra (p2 >= p1 + |y1|) dell'output
-# di l1. Se valgono entrambe (|x2| = |y1| = 0, p1 = p2) si generano
-# entrambi gli scambi: i due diagrammi sono isotopi.
-# Prima di tutto si eliminano gli strati che sono identita' (vedi
+# Layer l = [ p, x, y, e, f, w ]: it acts on the word u replacing
+# u{[p+1..p+|x|]} = x with y. Two consecutive layers l1, l2 (l1 first)
+# can be swapped if l2 acts entirely to the left
+# (p2 + |x2| <= p1) or entirely to the right (p2 >= p1 + |y1|) of the
+# output of l1. If both hold (|x2| = |y1| = 0, p1 = p2) both swaps are
+# generated: the two diagrams are isotopic.
+# First of all the layers that are identities are removed (see
 # FreeBS_IsIdentityLeaf).
-# La classe di equivalenza e' finita (stesso numero di strati, posizioni
-# limitate); si restituisce il suo minimo lessicografico.
-# Costo: proporzionale alla dimensione della classe (per k strati
-# indipendenti fino a k!). Va bene per ora; in futuro si puo'
-# sostituire con l'algoritmo quadratico di Delpeuch-Vicary.
+# The equivalence class is finite (same number of layers, bounded
+# positions); its lexicographic minimum is returned.
+# Cost: proportional to the size of the class (for k independent
+# layers up to k!). Fine for now; in the future it can be
+# replaced with the quadratic algorithm of Delpeuch-Vicary.
 InstallGlobalFunction( FreeBSCanonicalLayers,
 function( layers )
   local swaps, seen, todo, seq, new;
 
-  # la light leaf con x = y ed e = f = (1,...,1) e' l'identita' di x:
-  # lo strato corrispondente si elimina
+  # the light leaf with x = y and e = f = (1,...,1) is the identity of x:
+  # the corresponding layer is removed
   layers := Filtered( layers, l -> not FreeBS_IsIdentityLeaf( l{[ 2 .. 6 ]} ) );
 
   swaps := function( seq )
@@ -243,14 +243,14 @@ function( layers )
       p1 := l1[1];  a1 := Length( l1[2] );  b1 := Length( l1[3] );
       p2 := l2[1];  a2 := Length( l2[2] );  b2 := Length( l2[3] );
       if p2 + a2 <= p1 then
-        # l2 a sinistra: prima l2 (stessa posizione), poi l1 spostato
+        # l2 on the left: first l2 (same position), then l1 shifted
         s := ShallowCopy( seq );
         s[i]   := l2;
         s[i+1] := Concatenation( [ p1 - a2 + b2 ], l1{[ 2 .. 6 ]} );
         Add( res, s );
       fi;
       if p2 >= p1 + b1 then
-        # l2 a destra: prima l2 spostato, poi l1 (stessa posizione)
+        # l2 on the right: first l2 shifted, then l1 (same position)
         s := ShallowCopy( seq );
         s[i]   := Concatenation( [ p2 - b1 + a1 ], l2{[ 2 .. 6 ]} );
         s[i+1] := l1;
@@ -260,7 +260,7 @@ function( layers )
     return res;
   end;
 
-  #ricerca sul grafo dei diagrammi isotopi (diagrammi collegati da un singolo scambio di strati, trovato da swaps). AddSet fa in modo che la lista seen sia ordinata lessicograficamente. In todo vengono salvati tutti i nodi del grafo.
+  #search on the graph of isotopic diagrams (diagrams connected by a single swap of layers, found by swaps). AddSet keeps the list seen lexicographically sorted. todo stores the nodes of the graph still to be visited.
   seen := Set( [ layers ] );
   todo := [ layers ];
   while not IsEmpty( todo ) do
@@ -275,19 +275,19 @@ function( layers )
   return seen[1];
 end );
 
-# ---------- nomi delle light leaves in Syn ----------
+# ---------- names of the light leaves in Syn ----------
 BindGlobal( "FreeBS_LeafName",
   leaf -> Concatenation( "LL", String( leaf ) ) );
 
 BindGlobal( "FreeBS_LeafOfName",
   name -> EvalString( name{[ 3 .. Length( name ) ]} ) );
 
-# ---------- controlli ----------
+# ---------- checks ----------
 BindGlobal( "FreeBS_CheckLeaf",
-function( G, x, y, t )
+function( W, x, y, t )
   local e, f, w;
-  FreeBS_CheckWord( G, x );
-  FreeBS_CheckWord( G, y );
+  FreeBS_CheckWord( W, x );
+  FreeBS_CheckWord( W, y );
   if not ( IsList( t ) and Length( t ) = 3 ) then
     Error( "the index of a light leaf must be a triple [ e, f, w ]" );
   fi;
@@ -298,36 +298,35 @@ function( G, x, y, t )
   if not ( IsList( f ) and Length( f ) = Length( y ) and ForAll( f, i -> i in [ 0, 1 ] ) ) then
     Error( "f must be a 0/1 list of the same length as the target word" );
   fi;
-  FreeBS_CheckWord( G, w );
-  if CoxeterNormalFormOfWord( G, w ) <> w then
+  FreeBS_CheckWord( W, w );
+  if CoxeterNormalFormOfWord( W, w ) <> w then
     Error( "w must be given in normal form" );
   fi;
-  if CoxeterNormalFormOfWord( G, x{ Positions( e, 1 ) } ) <> w or
-     CoxeterNormalFormOfWord( G, y{ Positions( f, 1 ) } ) <> w then
+  if CoxeterNormalFormOfWord( W, x{ Positions( e, 1 ) } ) <> w or
+     CoxeterNormalFormOfWord( W, y{ Positions( f, 1 ) } ) <> w then
     Error( "the subexpressions e and f do not both end in w" );
   fi;
 end );
 
-# ---------- la categoria ----------
+# ---------- the category ----------
 InstallMethod( FreeBSCategory,
   "for a Coxeter group",
   [ IsCoxeterGroup ],
-  #TODO: change with W istead of
-function( G )
+function( W )
   local M, names, Syn, gen_obj, word_to_syn, syn_to_word, tensor_layers,
         syn_mor_to_layers, layers_to_syn, D;
 
-  M := CoxeterMatrix( G );
+  M := CoxeterMatrix( W );
   if ForAny( M, row -> infinity in row ) then
     Error( "Coxeter matrices with entries infinity are not supported (yet)" );
   fi;
-  names := CoxeterGeneratorNames( G );
+  names := CoxeterGeneratorNames( W );
 
   Syn := SyntacticCategoryInDoctrines( "IsStrictMonoidalCategory" :
            with_given := true,
            name := Concatenation( "Syn( FreeBSCategory( ", String( M ), " ) )" ) );
 
-  # parole <-> oggetti di Syn
+  # words <-> objects of Syn
   # same list as "names" but now the elements are objects of Syn
   gen_obj := List( names, nm ->
                #same as nm / Syn but with a more explicit codification
@@ -351,9 +350,9 @@ function( G )
     Error( "FreeBSCategory: unexpected syntactic object ", d[1] );
   end;
 
-  ## tensore di fattori [ parola sorgente, parola bersaglio, strati ]:
-  ## il fattore k agisce dopo i fattori a sinistra, gia' arrivati al
-  ## loro bersaglio
+  ## tensor of factors [ source word, target word, layers ]:
+  ## factor k acts after the factors on its left, which have
+  ## already reached their target
   tensor_layers := function( factors )
     local res, offset, fac;
     res := [ ];
@@ -365,7 +364,7 @@ function( G )
     return res;
   end;
 
-  ## morfismo di Syn -> lista di strati (non ancora canonica)
+  ## morphism of Syn -> list of layers (not yet canonical)
   syn_mor_to_layers := function( phi )
     local d, op, args, L, rest, factors;
     d := MorphismDatum( Syn, phi );
@@ -407,7 +406,7 @@ function( G )
     Error( "FreeBSCategory: unexpected syntactic morphism ", op );
   end;
 
-  ## (parola sorgente, strati) -> [ morfismo di Syn, parola bersaglio ]
+  ## (source word, layers) -> [ morphism of Syn, target word ]
   layers_to_syn := function( u, layers )
     local mor, l, p, x, y, left, right, gen, layer;
     mor := IdentityMorphism( Syn, word_to_syn( u ) );
@@ -457,13 +456,13 @@ function( G )
          only_primitive_operations := true )
        : FinalizeCategory := false );
 
-  SetUnderlyingCoxeterGroup( D, G );
+  SetUnderlyingCoxeterGroup( D, W );
 
-  ## uguaglianze: i dati sono canonici, quindi basta confrontarli
-  ## (in Syn l'uguaglianza e' solo sintattica e IsCongruentForMorphisms
-  ##  solleva un errore)
-  ## (peso 1 < 50 = peso delle funzioni ereditate da Syn, altrimenti CAP
-  ##  ignora queste)
+  ## equalities: the data are canonical, so comparing them is enough
+  ## (in Syn equality is only syntactic and IsCongruentForMorphisms
+  ##  raises an error)
+  ## (weight 1 < 50 = weight of the functions inherited from Syn, otherwise
+  ##  CAP ignores these)
   AddIsEqualForObjects( D, { D, a, b } -> BSWord( a ) = BSWord( b ), 1 );
   AddIsEqualForMorphisms( D, { D, a, b } -> BSLayers( a ) = BSLayers( b ), 1 );
   AddIsCongruentForMorphisms( D, { D, a, b } -> BSLayers( a ) = BSLayers( b ), 1 );
@@ -472,7 +471,7 @@ function( G )
   return D;
 end );
 
-# ---------- costruttori comodi ----------
+# ---------- convenience constructors ----------
 InstallMethod( BSObject,
   "for a free BS category and a word",
   [ IsFreeBSCategory, IsList ],

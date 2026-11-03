@@ -1,20 +1,20 @@
 #############################################################
-# coxeter.gi -- IMPLEMENTAZIONI
+# coxeter.gi -- IMPLEMENTATIONS
 #############################################################
 
 #############################################################
-# Forma bilineare e riflessioni (attributi del gruppo)
+# Bilinear form and reflections (attributes of the group)
 #############################################################
 
-#TUTTO VA CONTROLLATO!!!!!!!!!!!!!!!!!!!!!!!
+#EVERYTHING MUST BE CHECKED!!!!!!!!!!!!!!!!!!!!!!!
 
-# Forma bilineare B(e_i,e_j) = -cos(pi/m_ij), in forma esatta
-# (numeri ciclotomici). Se m_ij = infinity si pone B = -1.
+# Bilinear form B(e_i,e_j) = -cos(pi/m_ij), in exact form
+# (cyclotomic numbers). If m_ij = infinity we set B = -1.
 InstallMethod(CoxeterBilinearForm, "for a Coxeter group",
   [IsCoxeterGroup],
-function(G)
+function(W)
   local M, n, B, i, j, m;
-  M := CoxeterMatrix(G);
+  M := CoxeterMatrix(W);
   n := Length(M);
   B := List([1..n], i -> List([1..n], j -> 0));
   for i in [1..n] do
@@ -30,14 +30,14 @@ function(G)
   return B;
 end);
 
-# Matrici (azione a destra sui vettori riga) delle riflessioni
+# Matrices (right action on row vectors) of the reflections
 #   s_i : v -> v - 2 B(e_i, v) e_i
-# La riga j dell'i-esima matrice e' l'immagine di e_j.
+# Row j of the i-th matrix is the image of e_j.
 InstallMethod(CoxeterReflectionMatrices, "for a Coxeter group",
   [IsCoxeterGroup],
-function(G)
+function(W)
   local n, B, mats, i, j, A;
-  B := CoxeterBilinearForm(G);
+  B := CoxeterBilinearForm(W);
   n := Length(B);
   mats := [];
   for i in [1..n] do
@@ -51,12 +51,12 @@ function(G)
 end);
 
 #############################################################
-# Funzioni sulla matrice di Coxeter
+# Functions on the Coxeter matrix
 #############################################################
 
-# Un gruppo di Coxeter e' finito se e solo se la forma B e'
-# definita positiva. Test numerico (eliminazione gaussiana in
-# virgola mobile): i pivot devono essere tutti > eps.
+# A Coxeter group is finite if and only if the form B is
+# positive definite. Numerical test (floating point Gaussian
+# elimination): the pivots must all be > eps.
 InstallGlobalFunction(IsFiniteCoxeterMatrix, function(M)
   local n, B, i, j, k, f, m, eps;
   n := Length(M);
@@ -87,17 +87,17 @@ InstallGlobalFunction(IsFiniteCoxeterMatrix, function(M)
 end);
 
 #############################################################
-# Costruzione del gruppo
+# Construction of the group
 #############################################################
 
 InstallMethod(CoxeterGroupByMatrix, "with generator names",
   [IsList, IsList],
 function(M, names)
-  local n, i, j, m, F, gens, rels, G;
+  local n, i, j, m, F, gens, rels, W;
 
   n := Length(M);
 
-  # --- controllo dei nomi ---
+  # --- check of the names ---
   if Length(names) <> n or not ForAll(names, IsString) then
     Error("names must be a list of ", n, " strings");
   fi;
@@ -105,7 +105,7 @@ function(M, names)
     Error("names must be distinct");
   fi;
 
-  # --- controllo della matrice ---
+  # --- check of the matrix ---
   if not ForAll(M, r -> IsList(r) and Length(r) = n) then
     Error("M must be a square matrix of size ", n);
   fi;
@@ -124,9 +124,9 @@ function(M, names)
     od;
   od;
 
-  # --- gruppo libero e relazioni ---
+  # --- free group and relations ---
   if n = 0 then
-    G := FreeGroup(0) / [];
+    W := FreeGroup(0) / [];
   else
     F    := FreeGroup(names);
     gens := GeneratorsOfGroup(F);
@@ -139,13 +139,13 @@ function(M, names)
         fi;
       od;
     od;
-    G := F / rels;
+    W := F / rels;
   fi;
 
-  SetFilterObj(G, IsCoxeterGroup);
-  SetCoxeterMatrix(G, M);
-  SetCoxeterGeneratorNames(G, names);
-  return G;
+  SetFilterObj(W, IsCoxeterGroup);
+  SetCoxeterMatrix(W, M);
+  SetCoxeterGeneratorNames(W, names);
+  return W;
 end);
 
 InstallMethod(CoxeterGroupByMatrix, "default names",
@@ -154,28 +154,28 @@ M -> CoxeterGroupByMatrix(M,
          List([1..Length(M)], i -> Concatenation("s", String(i)))));
 
 #############################################################
-# Rappresentazioni
+# Representations
 #############################################################
 
 InstallMethod(CoxeterReflectionRepresentation, "for a Coxeter group",
   [IsCoxeterGroup],
-function(G)
+function(W)
   local mats, H;
-  if Length(CoxeterMatrix(G)) = 0 then
+  if Length(CoxeterMatrix(W)) = 0 then
     Error("rank 0: no reflection representation");
   fi;
-  mats := CoxeterReflectionMatrices(G);
+  mats := CoxeterReflectionMatrices(W);
   H := Group(mats);
-  # Per il teorema di Tits le matrici soddisfano le relazioni e la
-  # rappresentazione e' fedele: si puo' usare la versione NC.
-  return GroupHomomorphismByImagesNC(G, H, GeneratorsOfGroup(G), mats);
+  # By Tits' theorem the matrices satisfy the relations and the
+  # representation is faithful: the NC version can be used.
+  return GroupHomomorphismByImagesNC(W, H, GeneratorsOfGroup(W), mats);
 end);
 
 InstallMethod(CoxeterPermutationRepresentation, "for a Coxeter group",
   [IsCoxeterGroup],
-function(G)
+function(W)
   local M, n, mats, H, roots, perms, P;
-  M := CoxeterMatrix(G);
+  M := CoxeterMatrix(W);
   n := Length(M);
   if n = 0 then
     Error("rank 0: no permutation representation");
@@ -183,33 +183,33 @@ function(G)
   if not IsFiniteCoxeterMatrix(M) then
     Error("the Coxeter group is infinite");
   fi;
-  mats  := CoxeterReflectionMatrices(G);
+  mats  := CoxeterReflectionMatrices(W);
   H     := Group(mats);
-  # insieme delle radici = unione delle orbite dei vettori e_i
+  # set of roots = union of the orbits of the vectors e_i
   roots := Set(Concatenation(
              List(IdentityMat(n), v -> Orbit(H, v, OnRight))));
   perms := List(mats,
              A -> PermList(List(roots, r -> Position(roots, r*A))));
   P := Group(perms);
-  return GroupHomomorphismByImagesNC(G, P, GeneratorsOfGroup(G), perms);
+  return GroupHomomorphismByImagesNC(W, P, GeneratorsOfGroup(W), perms);
 end);
 
 #############################################################
-# Metodi veloci (evitano l'enumerazione dei laterali sul gruppo fp)
+# Fast methods (avoid coset enumeration on the fp group)
 #############################################################
 
 InstallMethod(IsFinite, "for a Coxeter group",
   [IsCoxeterGroup and IsFpGroup], SUM_FLAGS,
-  G -> Length(CoxeterMatrix(G)) = 0
-       or IsFiniteCoxeterMatrix(CoxeterMatrix(G)));
+  W -> Length(CoxeterMatrix(W)) = 0
+       or IsFiniteCoxeterMatrix(CoxeterMatrix(W)));
 
 InstallMethod(Size, "for a Coxeter group",
   [IsCoxeterGroup and IsFpGroup], SUM_FLAGS,
-function(G)
-  if Length(CoxeterMatrix(G)) = 0 then
+function(W)
+  if Length(CoxeterMatrix(W)) = 0 then
     return 1;
-  elif not IsFiniteCoxeterMatrix(CoxeterMatrix(G)) then
+  elif not IsFiniteCoxeterMatrix(CoxeterMatrix(W)) then
     return infinity;
   fi;
-  return Size(Image(CoxeterPermutationRepresentation(G)));
+  return Size(Image(CoxeterPermutationRepresentation(W)));
 end);

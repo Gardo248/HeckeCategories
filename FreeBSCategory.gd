@@ -1,81 +1,82 @@
 #############################################################
-# FreeBSCategory.gd -- DICHIARAZIONI
+# FreeBSCategory.gd -- DECLARATIONS
 #
-# Parte I : livello combinatorio (elementi di W via insiemi di
-#           inversioni, sottoespressioni, indici delle light leaves).
-# Parte II: la categoria CAP FreeBSCategory( G ), costruita come
-#           reinterpretazione della categoria sintattica Syn
-#           (SyntacticCategoryInDoctrines, ToolsForCategoricalTowers).
+# Part I : combinatorial level (elements of W via inversion
+#          sets, subexpressions, indices of the light leaves).
+# Part II: the CAP category FreeBSCategory( W ), built as a
+#          reinterpretation of the syntactic category Syn
+#          (SyntacticCategoryInDoctrines, ToolsForCategoricalTowers).
 #
-# Si carica con FreeBSCategory.g (pacchetti + coxeter.g + questi file).
-# TUTTA l'aritmetica e' esatta (interi e numeri ciclotomici).
+# Loaded with FreeBSCategory.g (packages + coxeter.g + these files).
+# ALL the arithmetic is exact (integers and cyclotomic numbers).
 #
-# Convenzioni
-#   - una parola x e' una lista di indici di generatori, es. [1,2,1];
-#   - una sottoespressione e di x e' una lista 0/1 di pari lunghezza;
-#   - il punto d'arrivo di e e' s_{x_1}^{e_1} ... s_{x_n}^{e_n};
-#   - un elemento w di W e' rappresentato dalla sua forma normale.
+# Conventions
+#   - a word x is a list of generator indices, e.g. [1,2,1];
+#   - a subexpression e of x is a 0/1 list of the same length;
+#   - the endpoint of e is s_{x_1}^{e_1} ... s_{x_n}^{e_n};
+#   - an element w of W is represented by its normal form.
 #############################################################
 
 #############################################################
-# Parte I -- livello combinatorio
+# Part I -- combinatorial level
 #############################################################
 
-# Insieme di inversioni I(w) (lista ordinata di vettori nella base
-# delle radici semplici). Determina w univocamente.
+# Inversion set I(w) (sorted list of vectors in the basis of
+# simple roots). It determines w uniquely.
 DeclareOperation( "InversionSetOfCoxeterWord",
                   [ IsCoxeterGroup, IsList ] );
 
-# Insieme di inversioni di w*s_i, noto quello di w.
+# Inversion set of w*s_i, given that of w.
 DeclareOperation( "InversionSetAfterRightMultiplication",
                   [ IsCoxeterGroup, IsList, IsPosInt ] );
 
-# Forma normale dell'elemento con dato insieme di inversioni.
+# Normal form of the element with the given inversion set.
 DeclareOperation( "CoxeterNormalFormOfInversionSet",
                   [ IsCoxeterGroup, IsList ] );
 
-# Forma normale di una parola qualsiasi.
+# Normal form of an arbitrary word.
 DeclareOperation( "CoxeterNormalFormOfWord",
                   [ IsCoxeterGroup, IsList ] );
 
-# Tutte le sottoespressioni di x: lista di coppie [ e, w ].
+# All the subexpressions of x: list of pairs [ e, w ].
 DeclareOperation( "SubexpressionsOfCoxeterWord",
                   [ IsCoxeterGroup, IsList ] );
 
-# Sottoespressioni di x raggruppate per punto d'arrivo: coppia
-# [ keys, groups ], dove keys e' la lista ordinata (senza ripetizioni)
-# dei punti d'arrivo w (in forma normale) e groups[j] e' la lista delle
-# sottoespressioni e (liste 0/1) che arrivano a keys[j], nello stesso
-# ordine in cui compaiono in SubexpressionsOfCoxeterWord.
+# Subexpressions of x grouped by endpoint: record
+# rec( endpoints, fibers ), where endpoints is the sorted list
+# (without repetitions) of the endpoints w (in normal form) and
+# fibers[j] is the list of the subexpressions e (0/1 lists) ending
+# in endpoints[j], in the same order as they appear in
+# SubexpressionsOfCoxeterWord.
 DeclareOperation( "SubexpressionsOfCoxeterWordByEndpoint",
                   [ IsCoxeterGroup, IsList ] );
 
-# Generatori di Hom(x,y): lista ordinata delle terne [ e, f, w ].
+# Generators of Hom(x,y): sorted list of the triples [ e, f, w ].
 DeclareOperation( "DoubleLeavesIndicesOfHom",
                   [ IsCoxeterGroup, IsList, IsList ] );
 
 #############################################################
-# Parte II -- la categoria CAP
+# Part II -- the CAP category
 #
-# Oggetti:   parole x (dato: la lista x, attributo BSWord).
-# Morfismi:  generati per composizione e prodotto tensoriale dalle
+# Objects:   words x (datum: the list x, attribute BSWord).
+# Morphisms: generated under composition and tensor product by the
 #            light leaves  LL(x,y,e,f,w) : x -> y.
-#            Dato (attributo BSLayers): la lista degli "strati"
+#            Datum (attribute BSLayers): the list of "layers"
 #                [ p, x, y, e, f, w ]
-#            nell'ordine di composizione; lo strato agisce come
-#            id_(p lettere a sinistra) (x) LL(x,y,e,f,w) (x) id_(resto).
-#            La lista vuota e' l'identita'.
-#            La light leaf LL(x,x,(1..1),(1..1),w), cioe' quella che
-#            sceglie l'intera espressione in sorgente e bersaglio, E'
-#            l'identita' di x: i suoi strati vengono eliminati.
-#            Il dato e' sempre in FORMA CANONICA: il minimo
-#            lessicografico nella classe generata dalla legge di
-#            scambio (interchange law) tra strati adiacenti
-#            indipendenti. Due morfismi sono uguali nella categoria
-#            monoidale stretta libera se e solo se hanno lo stesso
-#            dato canonico (Joyal-Street; Delpeuch-Vicary,
-#            "Normalization for planar string diagrams", 2018).
-# Nessuna relazione di Soergel e' imposta (categoria libera).
+#            in composition order; the layer acts as
+#            id_(p letters on the left) (x) LL(x,y,e,f,w) (x) id_(rest).
+#            The empty list is the identity.
+#            The light leaf LL(x,x,(1..1),(1..1),w), i.e. the one
+#            choosing the whole expression in source and target, IS
+#            the identity of x: its layers are removed.
+#            The datum is always in CANONICAL FORM: the lexicographic
+#            minimum in the class generated by the interchange law
+#            between adjacent independent layers. Two morphisms are
+#            equal in the free strict monoidal category if and only
+#            if they have the same canonical datum (Joyal-Street;
+#            Delpeuch-Vicary, "Normalization for planar string
+#            diagrams", 2018).
+# No Soergel relation is imposed (free category).
 #############################################################
 
 DeclareCategory( "IsFreeBSCategory", IsCapCategory );
@@ -89,19 +90,19 @@ DeclareAttribute( "UnderlyingCoxeterGroup", IsFreeBSCategory );
 DeclareAttribute( "BSWord", IsObjectInFreeBSCategory );
 DeclareAttribute( "BSLayers", IsMorphismInFreeBSCategory );
 
-# Costruttore della categoria
+# Constructor of the category
 DeclareAttribute( "FreeBSCategory", IsCoxeterGroup );
 
-# L'oggetto corrispondente alla parola x
+# The object corresponding to the word x
 DeclareOperation( "BSObject", [ IsFreeBSCategory, IsList ] );
 
-# Il generatore di Hom(x,y) di indice [ e, f, w ]
+# The generator of Hom(x,y) with index [ e, f, w ]
 DeclareOperation( "LightLeafMorphism",
                   [ IsFreeBSCategory, IsList, IsList, IsList ] );
 
-# Tutti i generatori di Hom(x,y), nell'ordine di DoubleLeavesIndicesOfHom
+# All the generators of Hom(x,y), in the order of DoubleLeavesIndicesOfHom
 DeclareOperation( "LightLeafMorphisms",
                   [ IsFreeBSCategory, IsList, IsList ] );
 
-# Forma canonica di una lista di strati (vedi sopra)
+# Canonical form of a list of layers (see above)
 DeclareGlobalFunction( "FreeBSCanonicalLayers" );

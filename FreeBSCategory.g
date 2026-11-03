@@ -1,9 +1,9 @@
 #############################################################
-# FreeBSCategory.g -- file di caricamento
+# FreeBSCategory.g -- loading file
 #
-# Uso (da GAP, con la directory di lavoro = quella dei file):
+# Usage (from GAP, with the working directory = that of the files):
 #   Read( "FreeBSCategory.g" );
-# Non si puo' rileggere nella stessa sessione (Declare*): riavvia GAP.
+# It cannot be re-read in the same session (Declare*): restart GAP.
 #############################################################
 for pkg in [ "MonoidalCategories", "ToolsForCategoricalTowers" ] do
   if LoadPackage( pkg, false ) <> true then
