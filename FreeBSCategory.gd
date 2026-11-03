@@ -1,62 +1,15 @@
 #############################################################
 # FreeBSCategory.gd -- DECLARATIONS
 #
-# Part I : combinatorial level (elements of W via inversion
-#          sets, subexpressions, indices of the light leaves).
-# Part II: the CAP category FreeBSCategory( W ), built as a
-#          reinterpretation of the syntactic category Syn
-#          (SyntacticCategoryInDoctrines, ToolsForCategoricalTowers).
+# The CAP category FreeBSCategory( W ), built as a
+# reinterpretation of the syntactic category Syn
+# (SyntacticCategoryInDoctrines, ToolsForCategoricalTowers).
+# The combinatorics of words (inversion sets, normal forms,
+# subexpressions, DoubleLeavesIndicesOfHom) and its conventions
+# are in coxeter.gd.
 #
 # Loaded with FreeBSCategory.g (packages + coxeter.g + these files).
 # ALL the arithmetic is exact (integers and cyclotomic numbers).
-#
-# Conventions
-#   - a word x is a list of generator indices, e.g. [1,2,1];
-#   - a subexpression e of x is a 0/1 list of the same length;
-#   - the endpoint of e is s_{x_1}^{e_1} ... s_{x_n}^{e_n};
-#   - an element w of W is represented by its normal form.
-#############################################################
-
-#############################################################
-# Part I -- combinatorial level
-#############################################################
-
-# Inversion set I(w) (sorted list of vectors in the basis of
-# simple roots). It determines w uniquely.
-DeclareOperation( "InversionSetOfCoxeterWord",
-                  [ IsCoxeterGroup, IsList ] );
-
-# Inversion set of w*s_i, given that of w.
-DeclareOperation( "InversionSetAfterRightMultiplication",
-                  [ IsCoxeterGroup, IsList, IsPosInt ] );
-
-# Normal form of the element with the given inversion set.
-DeclareOperation( "CoxeterNormalFormOfInversionSet",
-                  [ IsCoxeterGroup, IsList ] );
-
-# Normal form of an arbitrary word.
-DeclareOperation( "CoxeterNormalFormOfWord",
-                  [ IsCoxeterGroup, IsList ] );
-
-# All the subexpressions of x: list of pairs [ e, w ].
-DeclareOperation( "SubexpressionsOfCoxeterWord",
-                  [ IsCoxeterGroup, IsList ] );
-
-# Subexpressions of x grouped by endpoint: record
-# rec( endpoints, fibers ), where endpoints is the sorted list
-# (without repetitions) of the endpoints w (in normal form) and
-# fibers[j] is the list of the subexpressions e (0/1 lists) ending
-# in endpoints[j], in the same order as they appear in
-# SubexpressionsOfCoxeterWord.
-DeclareOperation( "SubexpressionsOfCoxeterWordByEndpoint",
-                  [ IsCoxeterGroup, IsList ] );
-
-# Generators of Hom(x,y): sorted list of the triples [ e, f, w ].
-DeclareOperation( "DoubleLeavesIndicesOfHom",
-                  [ IsCoxeterGroup, IsList, IsList ] );
-
-#############################################################
-# Part II -- the CAP category
 #
 # Objects:   words x (datum: the list x, attribute BSWord).
 # Morphisms: generated under composition and tensor product by the

@@ -213,3 +213,192 @@ function(W)
   fi;
   return Size(Image(CoxeterPermutationRepresentation(W)));
 end);
+
+#############################################################
+# Combinatorics of words (inversion sets, normal forms,
+# subexpressions)
+#
+# Mathematics (see the attached explanation):
+#   B = Coxeter bilinear form, exact (CoxeterBilinearForm).
+#   s_i acts on coordinate vectors v = sum_j v_j alpha_j as
+#       s_i(v) = v - 2 B(alpha_i, v) alpha_i,
+#   i.e. it changes only the i-th coordinate:
+#       v_i  ->  v_i - 2 * sum_j B[i][j] * v_j.
+#   I(w) = { beta > 0 : w(beta) < 0 }.  Facts (Tits, Humphreys 5.4-5.6):
+#     (1) s_i is a right descent of w  <=>  alpha_i in I(w);
+#     (2) if alpha_i in I(w):  I(w s_i) = s_i( I(w) \ {alpha_i} );
+#         otherwise:           I(w s_i) = { alpha_i } u s_i( I(w) ).
+#   No sign comparison: only equality between exact vectors.
+#############################################################
+
+# reflection s_i on the vector v (coordinates in the simple roots)
+BindGlobal( "ReflectionInGeomRepr",
+function( B, i, v )
+  local sv;
+  sv := ShallowCopy( v );
+  sv[i] := v[i] - 2 * Sum( [ 1 .. Length( v ) ], j -> B[i][j] * v[j] );
+  return sv;
+end );
+
+#TODO: I think this is superfluous, this check should be done in IsWellDefined
+BindGlobal( "CheckCoxeterWord",
+function( W, x )
+  local n;
+  n := Length( CoxeterMatrix( W ) );
+  if not ForAll( x, i -> IsPosInt( i ) and i <= n ) then
+    Error( "the word must be a list of integers in [1..", n, "]" );
+  fi;
+end );
+
+##
+InstallMethod( InversionSetAfterRightMultiplication,
+  "for a Coxeter group, an inversion set and a generator index",
+  [ IsCoxeterGroup, IsList, IsPosInt ],
+function( W, I, i )
+  local B, n, alpha, J;
+  B := CoxeterBilinearForm( W );
+  n := Length( B );
+  alpha := List( [ 1 .. n ], j -> 0 );
+  alpha[i] := 1;
+  if alpha in I then
+    J := List( Filtered( I, v -> v <> alpha ), v -> ReflectionInGeomRepr( B, i, v ) );
+  else
+    J := Concatenation( [ alpha ], List( I, v -> ReflectionInGeomRepr( B, i, v ) ) );
+  fi;
+  return Set( J );
+end );
+
+##
+InstallMethod( InversionSetOfCoxeterWord,
+  "for a Coxeter group and a word",
+  [ IsCoxeterGroup, IsList ],
+function( W, word )
+  local I, i;
+  CheckCoxeterWord( W, word );
+  I := [ ];
+  for i in word do
+    I := InversionSetAfterRightMultiplication( W, I, i );
+  od;
+  return I;
+end );
+
+##
+InstallMethod( CoxeterNormalFormOfInversionSet,
+  "for a Coxeter group and an inversion set",
+  [ IsCoxeterGroup, IsList ],
+function( W, I )
+  local n, alphas, word, i, found;
+  n := Length( CoxeterMatrix( W ) );
+  alphas := IdentityMat( n );
+  word := [ ];
+  while not IsEmpty( I ) do
+    found := false;
+    for i in [ 1 .. n ] do
+      if alphas[i] in I then
+        # s_i is the smallest right descent: w = w' s_i
+        Add( word, i );
+        I := InversionSetAfterRightMultiplication( W, I, i );
+        found := true;
+        break;
+      fi;
+    od;
+    if not found then
+      Error( "not a valid inversion set: no right descent found" );
+      #TODO: ATTENTION this checks only that the set at every step contains a simple root, that does not guarantee that the set is actually an inversion set of some element of W. Maybe there will be more test about it
+    fi;
+  od;
+  return Reversed( word );
+end );
+
+##
+InstallMethod( CoxeterNormalFormOfWord,
+  "for a Coxeter group and a word",
+  [ IsCoxeterGroup, IsList ],
+  { W, word } -> CoxeterNormalFormOfInversionSet( W,
+                   InversionSetOfCoxeterWord( W, word ) ) );
+
+##
+#the function uses a recursion to find all the subexpressions of a word, and, step by step, it computes the inversion set of the subexpression.
+#Then it computes the normal form of the inversion set, just once for each inversion set. To do that it uses a cache key,
+#which contains all the inversion sets whose normal form has already been computed, and a cache value, which contains the normal forms of the inversion sets in the cache key.
+#The function returns a list of pairs [e, w], where e is a 0/1 list representing the subexpression and w is the normal form of the inversion set of that subexpression.
+InstallMethod( SubexpressionsOfCoxeterWord,
+  "for a Coxeter group and a word",
+  [ IsCoxeterGroup, IsList ],
+function( W, x )
+  local n, leaves, cache_keys, cache_vals, walk, res, leaf, p;
+  CheckCoxeterWord( W, x );
+  n := Length( x );
+  leaves := [ ];                      # lists [ e, I ]
+  walk := function( k, e, I )
+    if k > n then
+      Add( leaves, [ ShallowCopy( e ), I ] );
+      return;
+    fi;
+    Add( e, 0 );
+    walk( k + 1, e, I );
+    Remove( e );
+    Add( e, 1 );
+    walk( k + 1, e, InversionSetAfterRightMultiplication( W, I, x[k] ) );
+    Remove( e );
+  end;
+  walk( 1, [ ], [ ] );
+  # the normal form is computed only once for each inversion set
+  cache_keys := [ ];
+  cache_vals := [ ];
+  res := [ ];
+  for leaf in leaves do
+    p := Position( cache_keys, leaf[2] );
+    if p = fail then
+      Add( cache_keys, leaf[2] );
+      Add( cache_vals, CoxeterNormalFormOfInversionSet( W, leaf[2] ) );
+      p := Length( cache_keys );
+    fi;
+    Add( res, [ leaf[1], cache_vals[p] ] );
+  od;
+  return res;
+end );
+
+##
+# Groups the subexpressions of x by endpoint: returns
+# rec( endpoints, fibers ), with endpoints = distinct endpoints (sorted)
+# and fibers[j] = subexpressions ending in endpoints[j].
+InstallMethod( SubexpressionsOfCoxeterWordByEndpoint,
+  "for a Coxeter group and a word",
+  [ IsCoxeterGroup, IsList ],
+function( W, x )
+  local subs, endpoints, fibers, a;
+  subs := SubexpressionsOfCoxeterWord( W, x );
+  endpoints := Set( List( subs, a -> a[2] ) );
+  fibers := List( endpoints, w -> [ ] );
+  for a in subs do
+    Add( fibers[ Position( endpoints, a[2] ) ], a[1] );
+  od;
+  return rec( endpoints := endpoints, fibers := fibers );
+end );
+
+##
+# Only the groups of subexpressions of x and of y with the same
+# endpoint w are compared, instead of all the pairs.
+InstallMethod( DoubleLeavesIndicesOfHom,
+  "for a Coxeter group and two words",
+  [ IsCoxeterGroup, IsList, IsList ],
+function( W, x, y )
+  local gx, gy, res, j, p, w, e, f;
+  gx := SubexpressionsOfCoxeterWordByEndpoint( W, x );
+  gy := SubexpressionsOfCoxeterWordByEndpoint( W, y );
+  res := [ ];
+  for j in [ 1 .. Length( gx.endpoints ) ] do
+    w := gx.endpoints[j];
+    p := Position( gy.endpoints, w );
+    if p <> fail then
+      for e in gx.fibers[j] do
+        for f in gy.fibers[p] do
+          Add( res, [ e, f, w ] );
+        od;
+      od;
+    fi;
+  od;
+  Sort( res );
+  return res;
+end );

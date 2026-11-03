@@ -237,6 +237,120 @@ CheckError("names: not strings",
   CoxeterGroupByMatrix, [[[1,3],[3,1]], [1,2]]);
 
 #############################################################
+# Combinatorics of words (sections 9-13)
+#############################################################
+
+# Checks that the condition cond holds
+Check := function(name, cond)
+  TEST_COUNT := TEST_COUNT + 1;
+  if not cond then
+    TEST_FAILED := TEST_FAILED + 1;
+    Print("FAIL: ", name, "\n");
+  fi;
+end;
+Bits := function( s ) return List( [ 1 .. Length( s ) ], i -> Int( [ s[i] ] ) ); end;
+T := function( e, f, w ) return [ Bits( e ), Bits( f ), w ]; end;
+
+#############################################################
+# 9. S_3
+#############################################################
+W := CoxeterGroupByMatrix( [[1,3],[3,1]], ["s","t"] );
+s := 1; t := 2;
+Check( "NF ss = e", CoxeterNormalFormOfWord( W, [s,s] ) = [] );
+Check( "NF sts = tst", CoxeterNormalFormOfWord( W, [s,t,s] ) = CoxeterNormalFormOfWord( W, [t,s,t] ) );
+Check( "NF sts = [1,2,1]", CoxeterNormalFormOfWord( W, [t,s,t] ) = [1,2,1] );
+Check( "|I(sts)| = 3", Length( InversionSetOfCoxeterWord( W, [s,t,s] ) ) = 3 );
+Check( "Hom(e,e)", DoubleLeavesIndicesOfHom( W, [], [] ) = [ [ [], [], [] ] ] );
+Check( "Hom(s,s)", Set( DoubleLeavesIndicesOfHom( W, [s], [s] ) ) = Set( [ T("0","0",[]), T("1","1",[1]) ] ) );
+Check( "Hom(t,t)", Set( DoubleLeavesIndicesOfHom( W, [t], [t] ) ) = Set( [ T("0","0",[]), T("1","1",[2]) ] ) );
+Check( "Hom(ss,s)", Set( DoubleLeavesIndicesOfHom( W, [s,s], [s] ) ) =
+      Set( [ T("00","0",[]), T("11","0",[]), T("10","1",[1]), T("01","1",[1]) ] ) );
+user := [ ["000","000",[]],["101","000",[]],["000","110",[]],["101","110",[]],
+          ["000","101",[]],["101","101",[]],["000","011",[]],["101","011",[]],
+          ["100","100",[1]],["100","010",[1]],["100","001",[1]],["100","111",[1]],
+          ["001","100",[1]],["001","010",[1]],["001","001",[1]],["001","111",[1]] ];
+user := List( user, a -> T( a[1], a[2], a[3] ) );
+got := DoubleLeavesIndicesOfHom( W, [s,t,s], [s,s,s] );
+Check( "Hom(sts,sss): 16 generators as in the list", Length( got ) = 16 and Set( got ) = Set( user ) );
+
+#############################################################
+# 10. Comparison with the EXACT oracle of the fp group (finite groups)
+#############################################################
+# (equality in a finite fp group = coset enumeration, exact arithmetic)
+CheckAgainstFp := function( M, name, N, L )
+  local W, gens, n, k, w1, w2, nf1, same, el;
+  W := CoxeterGroupByMatrix( M );  gens := GeneratorsOfGroup( W );  n := Length( M );
+  el := w -> Product( gens{ w }, One( W ) );
+  for k in [ 1 .. N ] do
+    w1 := List( [ 1 .. Random( [ 0 .. L ] ) ], i -> Random( [ 1 .. n ] ) );
+    w2 := List( [ 1 .. Random( [ 0 .. L ] ) ], i -> Random( [ 1 .. n ] ) );
+    same := ( el( w1 ) = el( w2 ) );
+    Check( Concatenation( name, ": equal NF <=> equal elements" ),
+           same = ( CoxeterNormalFormOfWord( W, w1 ) = CoxeterNormalFormOfWord( W, w2 ) ) );
+    nf1 := CoxeterNormalFormOfWord( W, w1 );
+    Check( Concatenation( name, ": NF is a word for the same element" ), el( nf1 ) = el( w1 ) );
+    Check( Concatenation( name, ": NF not longer, same parity" ),
+           Length( nf1 ) <= Length( w1 ) and ( Length( w1 ) - Length( nf1 ) ) mod 2 = 0 );
+    Check( Concatenation( name, ": |I(w)| = length of NF" ),
+           Length( InversionSetOfCoxeterWord( W, w1 ) ) = Length( nf1 ) );
+    Check( Concatenation( name, ": NF idempotent" ), CoxeterNormalFormOfWord( W, nf1 ) = nf1 );
+    Check( Concatenation( name, ": w * w^-1 = e" ),
+           CoxeterNormalFormOfWord( W, Concatenation( w1, Reversed( w1 ) ) ) = [] );
+  od;
+end;
+CheckAgainstFp( [[1,3,2],[3,1,3],[2,3,1]], "A3", 150, 9 );
+CheckAgainstFp( [[1,3,2],[3,1,4],[2,4,1]], "B3", 150, 9 );
+CheckAgainstFp( [[1,3,2],[3,1,5],[2,5,1]], "H3", 80, 9 );   # uses sqrt(5)
+CheckAgainstFp( [[1,5],[5,1]], "I2(5)", 60, 10 );
+CheckAgainstFp( [[1,7],[7,1]], "I2(7)", 60, 12 );           # uses cos(pi/7)
+
+#############################################################
+# 11. Infinite groups: comparison with the EXACT equality of the Tits matrices
+#############################################################
+CheckAgainstTits := function( M, name, N, L, infinite_irreducible )
+  local mats, n, k, w1, w2, W, mat, same;
+  W := CoxeterGroupByMatrix( M );  mats := CoxeterReflectionMatrices( W );  n := Length( M );
+  mat := w -> Product( mats{ w }, IdentityMat( n ) );
+  for k in [ 1 .. N ] do
+    w1 := List( [ 1 .. Random( [ 0 .. L ] ) ], i -> Random( [ 1 .. n ] ) );
+    w2 := List( [ 1 .. Random( [ 0 .. L ] ) ], i -> Random( [ 1 .. n ] ) );
+    same := ( mat( w1 ) = mat( w2 ) );
+    Check( Concatenation( name, ": equal NF <=> equal Tits matrices" ),
+           same = ( CoxeterNormalFormOfWord( W, w1 ) = CoxeterNormalFormOfWord( W, w2 ) ) );
+    Check( Concatenation( name, ": NF = same matrix" ),
+           mat( CoxeterNormalFormOfWord( W, w1 ) ) = mat( w1 ) );
+    Check( Concatenation( name, ": w * w^-1 = e" ),
+           CoxeterNormalFormOfWord( W, Concatenation( w1, Reversed( w1 ) ) ) = [] );
+  od;
+  # in an infinite irreducible Coxeter group the powers of a Coxeter
+  # element are reduced (Speyer)
+  if infinite_irreducible then
+    w1 := Concatenation( List( [ 1 .. 6 ], i -> [ 1 .. n ] ) );
+    Check( Concatenation( name, ": (s1...sn)^6 is reduced" ),
+           Length( CoxeterNormalFormOfWord( W, w1 ) ) = 6 * n );
+  fi;
+end;
+CheckAgainstTits( [[1,3,3],[3,1,3],[3,3,1]], "affine A2~", 150, 14, true );
+CheckAgainstTits( [[1,4,2],[4,1,4],[2,4,1]], "affine B2~", 150, 14, true );
+CheckAgainstTits( [[1,3,7],[3,1,3],[7,3,1]], "hyperbolic (7,3,3)", 100, 14, true );
+CheckAgainstTits( [[1,3,2,2],[3,1,3,3],[2,3,1,2],[2,3,2,1]], "D4 (finite, via Tits)", 100, 12, false );
+
+#############################################################
+# 12. Infinite group: hand count
+#############################################################
+W := CoxeterGroupByMatrix( [[1,4,2],[4,1,4],[2,4,1]] );
+Check( "affine B2~, Hom(121,121) has 12 generators", Length( DoubleLeavesIndicesOfHom( W, [1,2,1], [1,2,1] ) ) = 12 );
+Check( "affine B2~, braid m=4", CoxeterNormalFormOfWord( W, [1,2,1,2] ) = CoxeterNormalFormOfWord( W, [2,1,2,1] ) );
+Check( "affine B2~, commutation", CoxeterNormalFormOfWord( W, [1,3] ) = CoxeterNormalFormOfWord( W, [3,1] ) );
+Check( "affine B2~, 121 <> 212", CoxeterNormalFormOfWord( W, [1,2,1] ) <> CoxeterNormalFormOfWord( W, [2,1,2] ) );
+
+#############################################################
+# 13. Errors in the combinatorics
+#############################################################
+CheckError("letter out of range -> error",
+  CoxeterNormalFormOfWord, [CoxeterGroupByMatrix([[1,3],[3,1]]), [3]]);
+
+#############################################################
 # Summary
 #############################################################
 Print("\n", TEST_COUNT - TEST_FAILED, " / ", TEST_COUNT, " tests passed");
