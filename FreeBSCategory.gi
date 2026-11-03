@@ -13,30 +13,24 @@
 #   word x            : TensorProductOnListOfObjects( Syn, [ generators ] )
 #                       (also for |x| <= 1: it is the form that Syn itself
 #                        produces when flattening the tensors)
-#   light leaf        : MorphismConstructor( Syn, x, Pair( "MorphismConstructor",
-#                                            [ Syn, "LL[ x, y, e, f, w ]" ] ), y )
-#   layer [p,...]     : TensorProductOnListOfMorphisms( Syn, [ id_left, LL, id_right ] )
+#   generating mor.   : MorphismConstructor( Syn, x, Pair( "MorphismConstructor",
+#                                            [ Syn, "Dot_1" ] ), y )
+#                       (names "Dot_s", "TrivalentVertex_s", "Spider_s_t", see
+#                        FreeBS_GeneratorName; source and target fix the direction)
+#   layer [p,...]     : TensorProductOnListOfMorphisms( Syn, [ id_left, gen, id_right ] )
 #   morphism          : composition (PreCompose) of the layers
 #
 # Back from Syn: the syntactic term is read recursively and turned into a list of layers, then put in canonical form.
 #############################################################
 
-# ---------- light leaves that are identities ----------
-# leaf = [ x, y, e, f, w ]: it is the identity of x if x = y and if e, f choose the whole expression.
-BindGlobal( "FreeBS_IsIdentityLeaf",
-  leaf -> leaf[1] = leaf[2] and ForAll( leaf[3], i -> i = 1 )
-                            and ForAll( leaf[4], i -> i = 1 ) );
-
 # ---------- canonical form (interchange law) ----------
 #
-# Layer l = [ p, x, y, e, f, w ]: it acts on the word u replacing
+# Layer l = [ p, x, y, label ]: it acts on the word u replacing
 # u{[p+1..p+|x|]} = x with y. Two consecutive layers l1, l2 (l1 first)
 # can be swapped if l2 acts entirely to the left
 # (p2 + |x2| <= p1) or entirely to the right (p2 >= p1 + |y1|) of the
 # output of l1. If both hold (|x2| = |y1| = 0, p1 = p2) both swaps are
 # generated: the two diagrams are isotopic.
-# First of all the layers that are identities are removed (see
-# FreeBS_IsIdentityLeaf).
 # The equivalence class is finite (same number of layers, bounded
 # positions); its lexicographic minimum is returned.
 # Cost: proportional to the size of the class (for k independent
@@ -45,10 +39,6 @@ BindGlobal( "FreeBS_IsIdentityLeaf",
 InstallGlobalFunction( FreeBSCanonicalLayers,
 function( layers )
   local swaps, seen, todo, seq, new;
-
-  # the light leaf with x = y and e = f = (1,...,1) is the identity of x:
-  # the corresponding layer is removed
-  layers := Filtered( layers, l -> not FreeBS_IsIdentityLeaf( l{[ 2 .. 6 ]} ) );
 
   swaps := function( seq )
     local res, i, l1, l2, p1, a1, b1, p2, a2, b2, s;
@@ -61,13 +51,13 @@ function( layers )
         # l2 on the left: first l2 (same position), then l1 shifted
         s := ShallowCopy( seq );
         s[i]   := l2;
-        s[i+1] := Concatenation( [ p1 - a2 + b2 ], l1{[ 2 .. 6 ]} );
+        s[i+1] := Concatenation( [ p1 - a2 + b2 ], l1{[ 2 .. 4 ]} );
         Add( res, s );
       fi;
       if p2 >= p1 + b1 then
         # l2 on the right: first l2 shifted, then l1 (same position)
         s := ShallowCopy( seq );
-        s[i]   := Concatenation( [ p2 - b1 + a1 ], l2{[ 2 .. 6 ]} );
+        s[i]   := Concatenation( [ p2 - b1 + a1 ], l2{[ 2 .. 4 ]} );
         s[i+1] := l1;
         Add( res, s );
       fi;
@@ -90,37 +80,86 @@ function( layers )
   return seen[1];
 end );
 
-# ---------- names of the light leaves in Syn ----------
-BindGlobal( "FreeBS_LeafName",
-  leaf -> Concatenation( "LL", String( leaf ) ) );
+# ---------- generating morphisms ----------
 
-BindGlobal( "FreeBS_LeafOfName",
-  name -> EvalString( name{[ 3 .. Length( name ) ]} ) );
+# the alternating word [ s, t, s, ... ] of length m
+BindGlobal( "FreeBS_AlternatingWord",
+  { s, t, m } -> List( [ 1 .. m ], k -> [ s, t ][ 2 - k mod 2 ] ) );
 
-# ---------- checks ----------
-BindGlobal( "FreeBS_CheckLeaf",
-function( W, x, y, t )
-  local e, f, w;
-  CheckCoxeterWord( W, x );
-  CheckCoxeterWord( W, y );
-  if not ( IsList( t ) and Length( t ) = 3 ) then
-    Error( "the index of a light leaf must be a triple [ e, f, w ]" );
+# Checks that x -> y with the given label is a generating morphism:
+#   [ "Dot", s ]             : [s] -> [] or [] -> [s]
+#   [ "TrivalentVertex", s ] : [s,s] -> [s] or [s] -> [s,s]
+#   [ "Spider", s, t ]       : [s,t,s,...] -> [t,s,t,...] (length m_st),
+#                              only for s <> t and m_st <> infinity
+BindGlobal( "FreeBS_CheckGenerator",
+function( W, x, y, label )
+  local M, n, s, t, m;
+  M := CoxeterMatrix( W );
+  n := Length( M );
+  if not ( IsList( label ) and Length( label ) >= 2 and IsString( label[1] ) and
+           ForAll( label{[ 2 .. Length( label ) ]}, i -> IsPosInt( i ) and i <= n ) ) then
+    Error( "a label must be [ name, s ] or [ name, s, t ] with s, t in [1..", n, "]" );
   fi;
-  e := t[1];  f := t[2];  w := t[3];
-  if not ( IsList( e ) and Length( e ) = Length( x ) and ForAll( e, i -> i in [ 0, 1 ] ) ) then
-    Error( "e must be a 0/1 list of the same length as the source word" );
+  s := label[2];
+  if label[1] = "Dot" and Length( label ) = 2 then
+    if not [ x, y ] in [ [ [ s ], [ ] ], [ [ ], [ s ] ] ] then
+      Error( "a Dot of colour ", s, " goes [ ", s, " ] -> [ ] or [ ] -> [ ", s, " ]" );
+    fi;
+  elif label[1] = "TrivalentVertex" and Length( label ) = 2 then
+    if not [ x, y ] in [ [ [ s, s ], [ s ] ], [ [ s ], [ s, s ] ] ] then
+      Error( "a TrivalentVertex of colour ", s, " goes [ ", s, ", ", s, " ] -> [ ", s,
+             " ] or [ ", s, " ] -> [ ", s, ", ", s, " ]" );
+    fi;
+  elif label[1] = "Spider" and Length( label ) = 3 then
+    t := label[3];
+    if s = t then
+      Error( "a Spider needs two distinct colours" );
+    fi;
+    m := M[s][t];
+    if m = infinity then
+      Error( "there is no Spider for m_st = infinity" );
+    fi;
+    if x <> FreeBS_AlternatingWord( s, t, m ) or y <> FreeBS_AlternatingWord( t, s, m ) then
+      Error( "a Spider [ \"Spider\", ", s, ", ", t, " ] goes ",
+             FreeBS_AlternatingWord( s, t, m ), " -> ", FreeBS_AlternatingWord( t, s, m ) );
+    fi;
+  else
+    Error( "unknown label ", label, " (allowed: \"Dot\", \"TrivalentVertex\", \"Spider\")" );
   fi;
-  if not ( IsList( f ) and Length( f ) = Length( y ) and ForAll( f, i -> i in [ 0, 1 ] ) ) then
-    Error( "f must be a 0/1 list of the same length as the target word" );
+end );
+
+# Checks that the layers form a morphism u -> v
+BindGlobal( "FreeBS_CheckLayers",
+function( W, u, layers, v )
+  local l, p, x, y;
+  for l in layers do
+    if not ( IsList( l ) and Length( l ) = 4 ) then
+      Error( "a layer must be a list [ p, x, y, label ]" );
+    fi;
+    p := l[1];  x := l[2];  y := l[3];
+    if not IsInt( p ) or p < 0 or p + Length( x ) > Length( u ) or
+       u{[ p + 1 .. p + Length( x ) ]} <> x then
+      Error( "the layer ", l, " does not fit the word ", u );
+    fi;
+    FreeBS_CheckGenerator( W, x, y, l[4] );
+    u := Concatenation( u{[ 1 .. p ]}, y, u{[ p + Length( x ) + 1 .. Length( u ) ]} );
+  od;
+  if u <> v then
+    Error( "the layers do not end in the target word" );
   fi;
-  CheckCoxeterWord( W, w );
-  if CoxeterNormalFormOfWord( W, w ) <> w then
-    Error( "w must be given in normal form" );
-  fi;
-  if CoxeterNormalFormOfWord( W, x{ Positions( e, 1 ) } ) <> w or
-     CoxeterNormalFormOfWord( W, y{ Positions( f, 1 ) } ) <> w then
-    Error( "the subexpressions e and f do not both end in w" );
-  fi;
+end );
+
+# ---------- names of the generating morphisms in Syn ----------
+# [ "Dot", 1 ] <-> "Dot_1",  [ "Spider", 1, 2 ] <-> "Spider_1_2"
+BindGlobal( "FreeBS_GeneratorName",
+  label -> JoinStringsWithSeparator(
+             Concatenation( [ label[1] ], List( label{[ 2 .. Length( label ) ]}, String ) ), "_" ) );
+
+BindGlobal( "FreeBS_LabelOfName",
+function( name )
+  local parts;
+  parts := SplitString( name, "_" );
+  return Concatenation( [ parts[1] ], List( parts{[ 2 .. Length( parts ) ]}, Int ) );
 end );
 
 # ---------- the category ----------
@@ -132,9 +171,6 @@ function( W )
         syn_mor_to_layers, layers_to_syn, D;
 
   M := CoxeterMatrix( W );
-  if ForAny( M, row -> infinity in row ) then
-    Error( "Coxeter matrices with entries infinity are not supported (yet)" );
-  fi;
   names := CoxeterGeneratorNames( W );
 
   Syn := SyntacticCategoryInDoctrines( "IsStrictMonoidalCategory" :
@@ -173,7 +209,7 @@ function( W )
     res := [ ];
     offset := 0;
     for fac in factors do
-      Append( res, List( fac[3], l -> Concatenation( [ l[1] + offset ], l{[ 2 .. 6 ]} ) ) );
+      Append( res, List( fac[3], l -> Concatenation( [ l[1] + offset ], l{[ 2 .. 4 ]} ) ) );
       offset := offset + Length( fac[2] );
     od;
     return res;
@@ -186,7 +222,9 @@ function( W )
     op := d[1];
     args := d[2];
     if op = "MorphismConstructor" then
-      return [ Concatenation( [ 0 ], FreeBS_LeafOfName( args[2] ) ) ];
+      # the name carries the label, source and target the direction
+      return [ [ 0, syn_to_word( Source( phi ) ), syn_to_word( Range( phi ) ),
+                 FreeBS_LabelOfName( args[2] ) ] ];
     elif op = "IdentityMorphism" then
       return [ ];
     elif op = "PreCompose" then
@@ -222,19 +260,16 @@ function( W )
   end;
 
   ## (source word, layers) -> [ morphism of Syn, target word ]
+  ## (the layers have already been checked by FreeBS_CheckLayers)
   layers_to_syn := function( u, layers )
     local mor, l, p, x, y, left, right, gen, layer;
     mor := IdentityMorphism( Syn, word_to_syn( u ) );
     for l in layers do
       p := l[1];  x := l[2];  y := l[3];
-      if not IsInt( p ) or p < 0 or p + Length( x ) > Length( u ) or
-         u{[ p + 1 .. p + Length( x ) ]} <> x then
-        Error( "the layer ", l, " does not fit the word ", u );
-      fi;
       left  := u{[ 1 .. p ]};
       right := u{[ p + Length( x ) + 1 .. Length( u ) ]};
       gen := MorphismConstructor( Syn, word_to_syn( x ),
-               Pair( "MorphismConstructor", [ Syn, FreeBS_LeafName( l{[ 2 .. 6 ]} ) ] ),
+               Pair( "MorphismConstructor", [ Syn, FreeBS_GeneratorName( l[4] ) ] ),
                word_to_syn( y ) );
       layer := TensorProductOnListOfMorphisms( Syn,
                  [ IdentityMorphism( Syn, word_to_syn( left ) ), gen,
@@ -253,20 +288,16 @@ function( W )
          object_constructor := { D, x } ->
              CreateCapCategoryObjectWithAttributes( D, BSWord, x ),
          object_datum := { D, obj } -> BSWord( obj ),
-         morphism_constructor := { D, S, layers, T } ->
-             CreateCapCategoryMorphismWithAttributes( D, S, T,
-                 BSLayers, FreeBSCanonicalLayers( layers ) ),
+         morphism_constructor := function( D, S, layers, T )
+             FreeBS_CheckLayers( W, BSWord( S ), layers, BSWord( T ) );
+             return CreateCapCategoryMorphismWithAttributes( D, S, T,
+                      BSLayers, FreeBSCanonicalLayers( layers ) );
+           end,
          morphism_datum := { D, mor } -> BSLayers( mor ),
          modeling_tower_object_constructor := { D, x } -> word_to_syn( x ),
          modeling_tower_object_datum := { D, obj } -> syn_to_word( obj ),
-         modeling_tower_morphism_constructor := function( D, S, layers, T )
-             local r;
-             r := layers_to_syn( syn_to_word( S ), layers );
-             if r[2] <> syn_to_word( T ) then
-               Error( "the layers do not end in the target word" );
-             fi;
-             return r[1];
-           end,
+         modeling_tower_morphism_constructor := { D, S, layers, T } ->
+             layers_to_syn( syn_to_word( S ), layers )[1],
          modeling_tower_morphism_datum := { D, phi } -> syn_mor_to_layers( phi ),
          only_primitive_operations := true )
        : FinalizeCategory := false );
@@ -295,17 +326,64 @@ function( D, x )
   return ObjectConstructor( D, x );
 end );
 
-InstallMethod( LightLeafMorphism,
-  "for a free BS category, two words and a triple [ e, f, w ]",
+InstallMethod( BSGeneratingMorphism,
+  "for a free BS category, a source word, a label and a target word",
   [ IsFreeBSCategory, IsList, IsList, IsList ],
-function( D, x, y, t )
-  FreeBS_CheckLeaf( UnderlyingCoxeterGroup( D ), x, y, t );
-  return MorphismConstructor( D, BSObject( D, x ),
-           [ Concatenation( [ 0, x, y ], t ) ], BSObject( D, y ) );
+function( D, x, label, y )
+  return MorphismConstructor( D, BSObject( D, x ), [ [ 0, x, y, label ] ], BSObject( D, y ) );
 end );
 
-InstallMethod( LightLeafMorphisms,
-  "for a free BS category and two words",
-  [ IsFreeBSCategory, IsList, IsList ],
-  { D, x, y } -> List( DoubleLeavesIndicesOfHom( UnderlyingCoxeterGroup( D ), x, y ),
-                       t -> LightLeafMorphism( D, x, y, t ) ) );
+InstallMethod( StartDot,
+  "for a free BS category and a colour",
+  [ IsFreeBSCategory, IsPosInt ],
+  { D, s } -> BSGeneratingMorphism( D, [ ], [ "Dot", s ], [ s ] ) );
+
+InstallMethod( EndDot,
+  "for a free BS category and a colour",
+  [ IsFreeBSCategory, IsPosInt ],
+  { D, s } -> BSGeneratingMorphism( D, [ s ], [ "Dot", s ], [ ] ) );
+
+InstallMethod( SplitVertex,
+  "for a free BS category and a colour",
+  [ IsFreeBSCategory, IsPosInt ],
+  { D, s } -> BSGeneratingMorphism( D, [ s ], [ "TrivalentVertex", s ], [ s, s ] ) );
+
+InstallMethod( MergeVertex,
+  "for a free BS category and a colour",
+  [ IsFreeBSCategory, IsPosInt ],
+  { D, s } -> BSGeneratingMorphism( D, [ s, s ], [ "TrivalentVertex", s ], [ s ] ) );
+
+InstallMethod( SpiderMorphism,
+  "for a free BS category and two colours",
+  [ IsFreeBSCategory, IsPosInt, IsPosInt ],
+function( D, s, t )
+  local M, m;
+  M := CoxeterMatrix( UnderlyingCoxeterGroup( D ) );
+  if s = t or s > Length( M ) or t > Length( M ) or M[s][t] = infinity then
+    Error( "a Spider needs two distinct colours s, t with m_st <> infinity" );
+  fi;
+  m := M[s][t];
+  return BSGeneratingMorphism( D, FreeBS_AlternatingWord( s, t, m ), [ "Spider", s, t ],
+                                  FreeBS_AlternatingWord( t, s, m ) );
+end );
+
+InstallMethod( BSGeneratingMorphisms,
+  "for a free BS category",
+  [ IsFreeBSCategory ],
+function( D )
+  local M, n, res, s, t;
+  M := CoxeterMatrix( UnderlyingCoxeterGroup( D ) );
+  n := Length( M );
+  res := [ ];
+  for s in [ 1 .. n ] do
+    Append( res, [ StartDot( D, s ), EndDot( D, s ), SplitVertex( D, s ), MergeVertex( D, s ) ] );
+  od;
+  for s in [ 1 .. n ] do
+    for t in [ 1 .. n ] do
+      if s <> t and M[s][t] <> infinity then
+        Add( res, SpiderMorphism( D, s, t ) );
+      fi;
+    od;
+  od;
+  return res;
+end );
