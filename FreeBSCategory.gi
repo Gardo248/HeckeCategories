@@ -203,13 +203,11 @@ end );
 #   strato [p,...]    : TensorProductOnListOfMorphisms( Syn, [ id_sinistra, LL, id_destra ] )
 #   morfismo          : composizione (PreCompose) degli strati
 #
-# Ritorno da Syn: il termine sintattico viene letto ricorsivamente e
-# trasformato in una lista di strati, poi messo in forma canonica.
+# Ritorno da Syn: il termine sintattico viene letto ricorsivamente e trasformato in una lista di strati, poi messo in forma canonica.
 #############################################################
 
 # ---------- light leaves che sono identita' ----------
-# leaf = [ x, y, e, f, w ]: e' l'identita' di x se x = y e se e, f
-# scelgono l'intera espressione.
+# leaf = [ x, y, e, f, w ]: e' l'identita' di x se x = y e se e, f scelgono l'intera espressione.
 BindGlobal( "FreeBS_IsIdentityLeaf",
   leaf -> leaf[1] = leaf[2] and ForAll( leaf[3], i -> i = 1 )
                             and ForAll( leaf[4], i -> i = 1 ) );
@@ -262,6 +260,7 @@ function( layers )
     return res;
   end;
 
+  #ricerca sul grafo dei diagrammi isotopi (diagrammi collegati da un singolo scambio di strati, trovato da swaps). AddSet fa in modo che la lista seen sia ordinata lessicograficamente. In todo vengono salvati tutti i nodi del grafo.
   seen := Set( [ layers ] );
   todo := [ layers ];
   while not IsEmpty( todo ) do
@@ -313,6 +312,7 @@ end );
 InstallMethod( FreeBSCategory,
   "for a Coxeter group",
   [ IsCoxeterGroup ],
+  #TODO: change with W istead of
 function( G )
   local M, names, Syn, gen_obj, word_to_syn, syn_to_word, tensor_layers,
         syn_mor_to_layers, layers_to_syn, D;
@@ -327,10 +327,13 @@ function( G )
            with_given := true,
            name := Concatenation( "Syn( FreeBSCategory( ", String( M ), " ) )" ) );
 
-  ## parole <-> oggetti di Syn
+  # parole <-> oggetti di Syn
+  # same list as "names" but now the elements are objects of Syn
   gen_obj := List( names, nm ->
+               #same as nm / Syn but with a more explicit codification
                ObjectConstructor( Syn, Pair( "ObjectConstructor", [ Syn, nm ] ) ) );
 
+  # x is always a list of integers in [1..length(names)]
   word_to_syn := x -> TensorProductOnListOfObjects( Syn, gen_obj{ x } );
 
   syn_to_word := function( obj )
