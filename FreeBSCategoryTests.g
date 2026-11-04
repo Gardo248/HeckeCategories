@@ -33,10 +33,10 @@ CheckErr := function( name, f )
   Check( name, res[1] = false );
 end;
 EqM := IsEqualForMorphisms;
-Tns := TensorProductOnMorphisms;
+TnsM := TensorProductOnMorphisms;
 IdM := IdentityMorphism;
 
-W := CoxeterGroupByMatrix( [[1,3],[3,1]], ["s","t"] );
+W := CoxeterGroupByMatrix( [[1,3],[3,1]], ["s","t"] ); # A2
 D := FreeBSCategory( W );
 Ob := w -> BSObject( D, w );
 Check( "IsFreeBSCategory", IsFreeBSCategory( D ) );
@@ -79,8 +79,8 @@ Check( "merge ; split <> id_ss", not EqM( PreCompose( mg1, sp1 ), IdM( Ob( [1,1]
 
 # category axioms
 f := sp12;                                         # [1,2,1] -> [2,1,2]
-g := Tns( IdM( Ob( [2,1] ) ), EndDot( D, 2 ) );    # [2,1,2] -> [2,1]
-h := Tns( IdM( Ob( [2] ) ), sp1 );                 # [2,1]   -> [2,1,1]
+g := TnsM( IdM( Ob( [2,1] ) ), EndDot( D, 2 ) );    # [2,1,2] -> [2,1]
+h := TnsM( IdM( Ob( [2] ) ), sp1 );                 # [2,1]   -> [2,1,1]
 Check( "associativity of composition",
        EqM( PreCompose( PreCompose( f, g ), h ), PreCompose( f, PreCompose( g, h ) ) ) );
 Check( "left identity",  EqM( PreCompose( IdM( Source( f ) ), f ), f ) );
@@ -89,41 +89,60 @@ Check( "source/target of the composition",
        BSWord( Source( PreCompose( f, g ) ) ) = [1,2,1] and BSWord( Range( PreCompose( f, g ) ) ) = [2,1] );
 
 # monoidal axioms
-Check( "associativity of the tensor", EqM( Tns( Tns( f, g ), h ), Tns( f, Tns( g, h ) ) ) );
-Check( "id_x (x) id_y = id_xy", EqM( Tns( IdM( Ob( [1] ) ), IdM( Ob( [2,1] ) ) ), IdM( Ob( [1,2,1] ) ) ) );
-Check( "id_unit (x) f = f", EqM( Tns( IdM( TensorUnit( D ) ), f ), f ) );
-Check( "f (x) id_unit = f", EqM( Tns( f, IdM( TensorUnit( D ) ) ), f ) );
+Check( "associativity of the tensor", EqM( TnsM( TnsM( f, g ), h ), TnsM( f, TnsM( g, h ) ) ) );
+Check( "id_x (x) id_y = id_xy", EqM( TnsM( IdM( Ob( [1] ) ), IdM( Ob( [2,1] ) ) ), IdM( Ob( [1,2,1] ) ) ) );
+Check( "id_unit (x) f = f", EqM( TnsM( IdM( TensorUnit( D ) ), f ), f ) );
+Check( "f (x) id_unit = f", EqM( TnsM( f, IdM( TensorUnit( D ) ) ), f ) );
 Check( "interchange law (1)",
-       EqM( PreCompose( Tns( f, IdM( Source( g ) ) ), Tns( IdM( Range( f ) ), g ) ), Tns( f, g ) ) );
+       EqM( PreCompose( TnsM( f, IdM( Source( g ) ) ), TnsM( IdM( Range( f ) ), g ) ), TnsM( f, g ) ) );
 Check( "interchange law (2)",
-       EqM( PreCompose( Tns( IdM( Source( f ) ), g ), Tns( f, IdM( Range( g ) ) ) ), Tns( f, g ) ) );
+       EqM( PreCompose( TnsM( IdM( Source( f ) ), g ), TnsM( f, IdM( Range( g ) ) ) ), TnsM( f, g ) ) );
 Check( "interchange law: (id_ss (x) merge) ; (merge (x) id_s) = merge (x) merge",
-       EqM( PreCompose( Tns( IdM( Ob( [1,1] ) ), mg1 ), Tns( mg1, IdM( Ob( [1] ) ) ) ), Tns( mg1, mg1 ) ) );
+       EqM( PreCompose( TnsM( IdM( Ob( [1,1] ) ), mg1 ), TnsM( mg1, IdM( Ob( [1] ) ) ) ), TnsM( mg1, mg1 ) ) );
 a1 := sp1;  b1 := mg1;  a2 := EndDot( D, 2 );  b2 := StartDot( D, 2 );
 Check( "functoriality of the tensor",
-       EqM( Tns( PreCompose( a1, b1 ), PreCompose( a2, b2 ) ),
-            PreCompose( Tns( a1, a2 ), Tns( b1, b2 ) ) ) );
-Check( "the tensor is not commutative", BSLayers( Tns( f, h ) ) <> BSLayers( Tns( h, f ) ) );
+       EqM( TnsM( PreCompose( a1, b1 ), PreCompose( a2, b2 ) ),
+            PreCompose( TnsM( a1, a2 ), TnsM( b1, b2 ) ) ) );
+Check( "the tensor is not commutative", BSCanonicalLayers( TnsM( f, h ) ) <> BSCanonicalLayers( TnsM( h, f ) ) );
 Check( "zigzag (split (x) id) ; (id (x) merge) <> id_ss",
-       not EqM( PreCompose( Tns( sp1, IdM( Ob( [1] ) ) ), Tns( IdM( Ob( [1] ) ), mg1 ) ), IdM( Ob( [1,1] ) ) ) );
+       not EqM( PreCompose( TnsM( sp1, IdM( Ob( [1] ) ) ), TnsM( IdM( Ob( [1] ) ), mg1 ) ), IdM( Ob( [1,1] ) ) ) );
 
-# the datum does not depend on the order of independent layers
-Check( "MorphismConstructor canonicalises the layers",
+# equality does not depend on the order of independent layers
+Check( "MorphismConstructor: layers in another order give an equal morphism",
        EqM( MorphismConstructor( D, Ob( [1,1,1,1] ),
               [ [ 2, [1,1], [1], [ "TrivalentVertex", 1 ] ], [ 0, [1,1], [1], [ "TrivalentVertex", 1 ] ] ],
               Ob( [1,1] ) ),
-            Tns( mg1, mg1 ) ) );
+            TnsM( mg1, mg1 ) ) );
+
+# lazy normalization: BSLayers is stored as it comes, BSCanonicalLayers
+# is computed only when needed
+m0 := TnsM( mg1, mg1 );
+Check( "lazy: the canonical form is not computed at construction", not HasBSCanonicalLayers( m0 ) );
+m1 := PreCompose( TnsM( mg1, IdM( Ob( [1,1] ) ) ), TnsM( IdM( Ob( [1] ) ), mg1 ) );   # (f (x) id) ; (id (x) g)
+m2 := PreCompose( TnsM( IdM( Ob( [1,1] ) ), mg1 ), TnsM( mg1, IdM( Ob( [1] ) ) ) );   # (id (x) g) ; (f (x) id)
+Check( "(merge (x) id) ; (id (x) merge) = (id (x) merge) ; (merge (x) id)", EqM( m1, m2 ) );
+Check( "... with different BSLayers", BSLayers( m1 ) <> BSLayers( m2 ) );
+Check( "... and the same BSCanonicalLayers", BSCanonicalLayers( m1 ) = BSCanonicalLayers( m2 ) );
+fs := sp12;  gs := EndDot( D, 2 );                  # [1,2,1] -> [2,1,2],  [2] -> []
+n1 := PreCompose( TnsM( fs, IdM( Ob( [2] ) ) ), TnsM( IdM( Range( fs ) ), gs ) );
+n2 := PreCompose( TnsM( IdM( Source( fs ) ), gs ), TnsM( fs, IdM( TensorUnit( D ) ) ) );
+Check( "(Spider (x) id) ; (id (x) EndDot) = (id (x) EndDot) ; (Spider (x) id)", EqM( n1, n2 ) );
+Check( "... with different BSLayers and the same BSCanonicalLayers",
+       BSLayers( n1 ) <> BSLayers( n2 ) and BSCanonicalLayers( n1 ) = BSCanonicalLayers( n2 ) );
+Check( "same generators in an order not allowed by the interchange law -> different",
+       not EqM( PreCompose( TnsM( sp1, IdM( Ob( [1] ) ) ), TnsM( IdM( Ob( [1] ) ), mg1 ) ),
+                PreCompose( TnsM( IdM( Ob( [1] ) ), sp1 ), TnsM( mg1, IdM( Ob( [1] ) ) ) ) ) );
 
 # cases with empty parts (morphisms from/to the unit)
 dot := ed1;  udot := sd1;
-Check( "dot (x) udot = udot o dot", EqM( Tns( dot, udot ), PreCompose( dot, udot ) ) );
-Check( "udot (x) dot = udot o dot", EqM( Tns( udot, dot ), PreCompose( dot, udot ) ) );
+Check( "dot (x) udot = udot o dot", EqM( TnsM( dot, udot ), PreCompose( dot, udot ) ) );
+Check( "udot (x) dot = udot o dot", EqM( TnsM( udot, dot ), PreCompose( dot, udot ) ) );
 Check( "udot o dot <> id_s", not EqM( PreCompose( dot, udot ), IdM( Ob( [1] ) ) ) );
 sc := PreCompose( udot, dot );                              # barbell: endomorphism of the unit
 Check( "scalar <> id of the unit", not EqM( sc, IdM( TensorUnit( D ) ) ) );
 Check( "scalar on the left <> on the right of a strand (no braiding)",
-       not EqM( Tns( sc, IdM( Ob( [1] ) ) ), Tns( IdM( Ob( [1] ) ), sc ) ) );
-Check( "scalars: sc (x) sc = sc o sc", EqM( Tns( sc, sc ), PreCompose( sc, sc ) ) );
+       not EqM( TnsM( sc, IdM( Ob( [1] ) ) ), TnsM( IdM( Ob( [1] ) ), sc ) ) );
+Check( "scalars: sc (x) sc = sc o sc", EqM( TnsM( sc, sc ), PreCompose( sc, sc ) ) );
 
 # in Syn (purely syntactic equality) composition is NOT
 # associative: the two trees are different. This test documents the fact.
@@ -135,7 +154,7 @@ Check( "in Syn (f g) h and f (g h) are different terms",
 
 # canonical form directly
 Check( "FreeBSCanonicalLayers idempotent",
-       FreeBSCanonicalLayers( BSLayers( Tns( f, g ) ) ) = BSLayers( Tns( f, g ) ) );
+       FreeBSCanonicalLayers( BSCanonicalLayers( TnsM( f, g ) ) ) = BSCanonicalLayers( TnsM( f, g ) ) );
 
 # infinite groups
 W3 := CoxeterGroupByMatrix( [[1,3,3],[3,1,3],[3,3,1]] );

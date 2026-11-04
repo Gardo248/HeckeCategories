@@ -20,7 +20,7 @@
 #   layer [p,...]     : TensorProductOnListOfMorphisms( Syn, [ id_left, gen, id_right ] )
 #   morphism          : composition (PreCompose) of the layers
 #
-# Back from Syn: the syntactic term is read recursively and turned into a list of layers, then put in canonical form.
+# Back from Syn: the syntactic term is read recursively and turned into a list of layers, stored as it is (the canonical form is computed just when it is strictly necessary, see BSCanonicalLayers).
 #############################################################
 
 #############################################################
@@ -208,13 +208,18 @@ function( name )
   return Concatenation( [ parts[1] ], List( parts{[ 2 .. Length( parts ) ]}, Int ) );
 end );
 
+# ---------- canonical form ----------
+InstallMethod( BSCanonicalLayers,
+  "for a morphism in a free BS category",
+  [ IsMorphismInFreeBSCategory ],
+  mor -> FreeBSCanonicalLayers( BSLayers( mor ) ) );
+
 # ---------- the category ----------
 InstallMethod( FreeBSCategory,
   "for a Coxeter group",
   [ IsCoxeterGroup ],
 function( W )
-  local M, names, Syn, gen_obj, word_to_syn, syn_to_word, tensor_layers,
-        syn_mor_to_layers, layers_to_syn, D;
+  local M, names, Syn, gen_obj, word_to_syn, syn_to_word, tensor_layers, syn_mor_to_layers, layers_to_syn, is_equal_morphisms, D;
 
   M := CoxeterMatrix( W );
   names := CoxeterGeneratorNames( W );
@@ -326,6 +331,25 @@ function( W )
     return [ mor, u ];
   end;
 
+  ## equality of two parallel morphisms. Fast checks first; the canonical
+  ## form is computed only if they are inconclusive. The interchange law
+  ## preserves the number of layers and the multiset of the generators
+  ## [ x, y, label ] (only the offsets p change).
+  is_equal_morphisms := function( a, b )
+    local la, lb;
+    la := BSLayers( a );
+    lb := BSLayers( b );
+    if la = lb then
+      return true;
+    elif Length( la ) <> Length( lb ) then
+      return false;
+    elif Collected( List( la, l -> l{[ 2 .. 4 ]} ) ) <>
+         Collected( List( lb, l -> l{[ 2 .. 4 ]} ) ) then
+      return false;
+    fi;
+    return BSCanonicalLayers( a ) = BSCanonicalLayers( b );
+  end;
+
   D := ReinterpretationOfCategory( Syn, rec(
          name := Concatenation( "FreeBSCategory( ", String( M ), " )" ),
          category_filter := IsFreeBSCategory,
@@ -334,10 +358,11 @@ function( W )
          object_constructor := { D, x } ->
              CreateCapCategoryObjectWithAttributes( D, BSWord, x ),
          object_datum := { D, obj } -> BSWord( obj ),
+         ## the layers are stored as they come: the canonical form is computed only when comparing
          morphism_constructor := function( D, S, layers, T )
              FreeBS_CheckLayers( W, BSWord( S ), layers, BSWord( T ) );
              return CreateCapCategoryMorphismWithAttributes( D, S, T,
-                      BSLayers, FreeBSCanonicalLayers( layers ) );
+                      BSLayers, layers );
            end,
          morphism_datum := { D, mor } -> BSLayers( mor ),
          modeling_tower_object_constructor := { D, x } -> word_to_syn( x ),
@@ -350,14 +375,14 @@ function( W )
 
   SetUnderlyingCoxeterGroup( D, W );
 
-  ## equalities: the data are canonical, so comparing them is enough
+  ## equalities: see is_equal_morphisms above
   ## (in Syn equality is only syntactic and IsCongruentForMorphisms
   ##  raises an error)
   ## (weight 1 < 50 = weight of the functions inherited from Syn, otherwise
   ##  CAP ignores these)
   AddIsEqualForObjects( D, { D, a, b } -> BSWord( a ) = BSWord( b ), 1 );
-  AddIsEqualForMorphisms( D, { D, a, b } -> BSLayers( a ) = BSLayers( b ), 1 );
-  AddIsCongruentForMorphisms( D, { D, a, b } -> BSLayers( a ) = BSLayers( b ), 1 );
+  AddIsEqualForMorphisms( D, { D, a, b } -> is_equal_morphisms( a, b ), 1 );
+  AddIsCongruentForMorphisms( D, { D, a, b } -> is_equal_morphisms( a, b ), 1 );
 
   Finalize( D );
   return D;
