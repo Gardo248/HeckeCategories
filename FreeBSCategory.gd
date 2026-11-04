@@ -13,7 +13,7 @@
 #
 # Objects:   words x (datum: the list x, attribute BSWord).
 # Morphisms: generated under composition and tensor product by the
-#            generating morphisms (Elias-Khovanov), identified by a
+#            generating morphisms, identified by a
 #            label; source and target fix the direction:
 #              [ "Dot", s ]             : [s] -> []  (end dot),
 #                                         [] -> [s]  (start dot);

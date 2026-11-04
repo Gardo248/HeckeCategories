@@ -23,6 +23,52 @@
 # Back from Syn: the syntactic term is read recursively and turned into a list of layers, then put in canonical form.
 #############################################################
 
+#############################################################
+# Why morphisms are stored as LAYERS
+#
+# A morphism is a list of layers [ p, x, y, label ], read in
+# composition order; the layer [ p, x, y, label ] stands for
+#     id_(p letters on the left) (x) gen(x -> y, label) (x) id_(rest).
+#
+# (1) Identities as wires are unavoidable, but are not stored.
+#     Most morphisms cannot be written with (x) and o of the
+#     generators alone, e.g. the zigzag
+#         ( split (x) id_s ) o ( id_s (x) merge ) : ss -> sss -> ss
+#     is neither a tensor product (the two vertices share a strand)
+#     nor a composition of two generators. In a layer the identity
+#     wires are encoded only by the integer p (the wires on the right
+#     are determined by the word).
+#
+# (2) Most of the relations are quotiented out for free.
+#     A syntactic term (a tree of (x) and o, as in Syn) has many
+#     representatives of the same morphism: associativity of o and
+#     of (x), unit laws, functoriality
+#         ( f o g ) (x) ( h o k ) = ( f (x) h ) o ( g (x) k ).
+#     Flattening the term into a list of layers kills all of them;
+#     the only relation left is the INTERCHANGE LAW: two adjacent
+#     layers acting on disjoint strands can be swapped (adjusting p),
+#     e.g.
+#         ( id_ss (x) merge ) o ( merge (x) id_s ) = merge (x) merge.
+#     This relation is a property of the category, not of the
+#     implementation: every implementation has to decide it.
+#
+# (3) Equality is decidable.
+#     Two terms denote the same morphism of the free strict monoidal
+#     category if and only if their lists of layers are related by
+#     interchange moves (Joyal-Street; Delpeuch-Vicary, "Normalization
+#     for planar string diagrams", 2018). Choosing a canonical
+#     representative (FreeBSCanonicalLayers: lexicographic minimum)
+#     reduces equality of morphisms to equality of lists.
+#
+# (4) The categorical operations are trivial.
+#     Composition = concatenation of the lists; tensor product =
+#     shift of the offsets p of the right factor and concatenation.
+#
+# (5) Useful for the future.
+#     A monoidal functor (e.g. to Soergel bimodules) is evaluated layer
+#     by layer from the images of the generators; the generators
+#     occurring in a morphism are listed directly.
+
 # ---------- canonical form (interchange law) ----------
 #
 # Layer l = [ p, x, y, label ]: it acts on the word u replacing
