@@ -130,7 +130,18 @@ end );
 
 # the alternating word [ s, t, s, ... ] of length m
 BindGlobal( "FreeBS_AlternatingWord",
-  { s, t, m } -> List( [ 1 .. m ], k -> [ s, t ][ 2 - k mod 2 ] ) );
+function( s, t, m )
+  local w, k;
+  w := [ ];
+  for k in [ 1 .. m ] do
+    if IsOddInt( k ) then
+      Add( w, s );
+    else
+      Add( w, t );
+    fi;
+  od;
+  return w;
+end );
 
 # Checks that x -> y with the given label is a generating morphism:
 #   [ "Dot", s ]             : [s] -> [] or [] -> [s]
@@ -198,8 +209,11 @@ end );
 # ---------- names of the generating morphisms in Syn ----------
 # [ "Dot", 1 ] <-> "Dot_1",  [ "Spider", 1, 2 ] <-> "Spider_1_2"
 BindGlobal( "FreeBS_GeneratorName",
-  label -> JoinStringsWithSeparator(
-             Concatenation( [ label[1] ], List( label{[ 2 .. Length( label ) ]}, String ) ), "_" ) );
+function( label )
+  local parts;
+  parts := Concatenation( [ label[1] ], List( label{[ 2 .. Length( label ) ]}, String ) );
+  return JoinStringsWithSeparator( parts, "_" );
+end );
 
 BindGlobal( "FreeBS_LabelOfName",
 function( name )
@@ -219,7 +233,11 @@ InstallMethod( FreeBSCategory,
   "for a Coxeter group",
   [ IsCoxeterGroup ],
 function( W )
-  local M, names, Syn, gen_obj, word_to_syn, syn_to_word, tensor_layers, syn_mor_to_layers, layers_to_syn, is_equal_morphisms, D;
+  local M, names, Syn, gen_obj, word_to_syn, syn_to_word, tensor_layers, syn_mor_to_layers, layers_to_syn, is_equal_morphisms,
+  # variables for the record ReinterpretationOfCategory:
+        name, object_constructor, object_datum, morphism_constructor, morphism_datum,
+        modeling_tower_object_constructor, modeling_tower_object_datum,
+        modeling_tower_morphism_constructor, modeling_tower_morphism_datum, D;
 
   M := CoxeterMatrix( W );
   names := CoxeterGeneratorNames( W );
@@ -350,26 +368,62 @@ function( W )
     return BSCanonicalLayers( a ) = BSCanonicalLayers( b );
   end;
 
+  ## ---------- the fields of ReinterpretationOfCategory ----------
+
+  name := Concatenation( "FreeBSCategory( ", String( M ), " )" );
+
+  ## object of D with datum the word x
+  object_constructor := function( D, x )
+    return CreateCapCategoryObjectWithAttributes( D, BSWord, x );
+  end;
+
+  object_datum := { D, obj } -> BSWord( obj );
+
+  ## morphism of D with datum the list of layers; the layers are checked
+  ## and stored as they come: the canonical form is computed only when
+  ## comparing (BSCanonicalLayers)
+  morphism_constructor := function( D, S, layers, T )
+    FreeBS_CheckLayers( W, BSWord( S ), layers, BSWord( T ) );
+    return CreateCapCategoryMorphismWithAttributes( D, S, T, BSLayers, layers );
+  end;
+
+  morphism_datum := { D, mor } -> BSLayers( mor );
+
+  ## word -> object of Syn
+  modeling_tower_object_constructor := { D, x } -> word_to_syn( x );
+
+  ## object of Syn -> word
+  modeling_tower_object_datum := { D, obj } -> syn_to_word( obj );
+
+  ## list of layers -> morphism of Syn (layers_to_syn also returns the
+  ## target word, not needed here)
+  modeling_tower_morphism_constructor := function( D, S, layers, T )
+    local r;
+    r := layers_to_syn( syn_to_word( S ), layers );
+    return r[1];
+  end;
+
+  ## morphism of Syn -> list of layers
+  modeling_tower_morphism_datum := { D, phi } -> syn_mor_to_layers( phi );
+
+  ## The fields of the record are defined above as local variables and only
+  ## listed here (style of FiniteCocompletions/FiniteStrictProductCompletion.gi).
+  ## For the compact version, with the functions written inline inside this
+  ## call, see the commit with tag "compact-reinterpretation-record"
+  ## (git show compact-reinterpretation-record:FreeBSCategory.gi).
   D := ReinterpretationOfCategory( Syn, rec(
-         name := Concatenation( "FreeBSCategory( ", String( M ), " )" ),
+         name := name,
          category_filter := IsFreeBSCategory,
          category_object_filter := IsObjectInFreeBSCategory,
          category_morphism_filter := IsMorphismInFreeBSCategory,
-         object_constructor := { D, x } ->
-             CreateCapCategoryObjectWithAttributes( D, BSWord, x ),
-         object_datum := { D, obj } -> BSWord( obj ),
-         ## the layers are stored as they come: the canonical form is computed only when comparing
-         morphism_constructor := function( D, S, layers, T )
-             FreeBS_CheckLayers( W, BSWord( S ), layers, BSWord( T ) );
-             return CreateCapCategoryMorphismWithAttributes( D, S, T,
-                      BSLayers, layers );
-           end,
-         morphism_datum := { D, mor } -> BSLayers( mor ),
-         modeling_tower_object_constructor := { D, x } -> word_to_syn( x ),
-         modeling_tower_object_datum := { D, obj } -> syn_to_word( obj ),
-         modeling_tower_morphism_constructor := { D, S, layers, T } ->
-             layers_to_syn( syn_to_word( S ), layers )[1],
-         modeling_tower_morphism_datum := { D, phi } -> syn_mor_to_layers( phi ),
+         object_constructor := object_constructor,
+         object_datum := object_datum,
+         morphism_constructor := morphism_constructor,
+         morphism_datum := morphism_datum,
+         modeling_tower_object_constructor := modeling_tower_object_constructor,
+         modeling_tower_object_datum := modeling_tower_object_datum,
+         modeling_tower_morphism_constructor := modeling_tower_morphism_constructor,
+         modeling_tower_morphism_datum := modeling_tower_morphism_datum,
          only_primitive_operations := true )
        : FinalizeCategory := false );
 

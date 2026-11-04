@@ -116,7 +116,9 @@ Check( "MorphismConstructor: layers in another order give an equal morphism",
 
 # lazy normalization: BSLayers is stored as it comes, BSCanonicalLayers
 # is computed only when needed
-m0 := TnsM( mg1, mg1 );
+# (CAP caches the results of the operations: m0 must be a morphism never
+#  built before, otherwise it could be an old object already normalized)
+m0 := TnsM( SplitVertex( D, 2 ), MergeVertex( D, 2 ) );
 Check( "lazy: the canonical form is not computed at construction", not HasBSCanonicalLayers( m0 ) );
 m1 := PreCompose( TnsM( mg1, IdM( Ob( [1,1] ) ) ), TnsM( IdM( Ob( [1] ) ), mg1 ) );   # (f (x) id) ; (id (x) g)
 m2 := PreCompose( TnsM( IdM( Ob( [1,1] ) ), mg1 ), TnsM( mg1, IdM( Ob( [1] ) ) ) );   # (id (x) g) ; (f (x) id)
