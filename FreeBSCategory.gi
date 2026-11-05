@@ -65,7 +65,7 @@
 #     shift of the offsets p of the right factor and concatenation.
 #
 # (5) Useful for the future.
-#     A monoidal functor (e.g. to Soergel bimodules) is evaluated layer
+#     A monoidal functor (e.g. to localized category) is evaluated layer
 #     by layer from the images of the generators; the generators
 #     occurring in a morphism are listed directly.
 

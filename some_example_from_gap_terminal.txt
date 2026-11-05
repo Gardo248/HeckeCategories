@@ -1,0 +1,71 @@
+gap> Read( "FreeBSCategory.g" );                           
+gap> W := CoxeterGroupByMatrix( [[1,3],[3,1]], ["s","t"] );
+<fp group on the generators [ s, t ]>
+gap> D := FreeBSCategory( W );                             
+FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )
+gap> Ob := w -> BSObject( D, w );                          
+function( w ) ... end
+gap> Ds := Ob([1]);
+<An object in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> Dst := Ob([1,2,1]);
+<An object in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> Display(Dst);      
+An object in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ).
+gap> Display(ObjectDatum(Dst));
+[ 1, 2, 1 ]
+gap> Display(ModelingObject(D, Dst));
+TensorProductOnListOfObjects( Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), [ "s" / Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), "t" / Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), "s" / Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] \
+) ) ] )
+gap> SynD := ModelingCategory( D );
+Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) )
+gap> SplitVertex( D, 1 );                                                                                                                  
+<A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> PreCompose( PreCompose( SplitVertex( D, 1 ), TensorProduct( EndDot( D, 1 ), IdentityMorphism( D, Ob( [ 1 ] ) ) ) ), SplitVertex( D, 1 ) ); 
+<A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> #associativity:
+gap> #(f \circ g) \circ h and f \circ (g \circ h) are equal in D but not in Syn
+gap> f := SplitVertex( D, 1 );
+<A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> h := SplitVertex( D, 1 );
+<A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> g := TensorProduct( EndDot( D, 1 ), IdentityMorphism( D, Ds ) );
+<A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> PreCompose( h, PreCompose( g, h ) ) = PreCompose( PreCompose( h, g ), f );
+true
+gap> f_in_syn := ModelingMorphism( D, f );
+<A morphism in Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) )>
+gap> Display( f );
+A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ).
+gap> Display( MorphismDatum( f ) );
+[ [ 0, [ 1 ], [ 1, 1 ], [ "TrivalentVertex", 1 ] ] ]
+gap> Display( MorphismDatum( f_in_syn ) );
+[ "TensorProductOnListOfMorphisms", 
+  [ Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), 
+      [ 
+          MorphismConstructor( Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), TensorProductOnListOfObjects( Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), [ "s" / Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ) ] ), Pair( "MorphismConstruct\
+or", [ Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), "TrivalentVertex_1" ] ), TensorProductOnListOfObjects( Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), [ "s" / Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) ), "s" / Syn( FreeBSCategor\
+y( [ [ 1, 3 ], [ 3, 1 ] ] ) ) ] ) ) ] ] ]
+gap> g_in_syn := ModelingMorphism( D, g );
+<A morphism in Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) )>
+gap> h_in_syn := ModelingMorphism( D, h );
+<A morphism in Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) )>
+gap> IsEqualForMorphisms( PreCompose( f_in_syn, PreCompose( g_in_syn, h_in_syn ) ), PreCompose( PreCompose( h_in_syn, g_in_syn ), f_in_syn ) );
+false
+
+gap> #tensor product of identities is the identity of the tensor product
+gap> M  := f -> ModelingMorphism( D, f );
+function( f ) ... end
+gap> id_s := IdentityMorphism( D, Ob( [ 1 ] ) );
+<An identity morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> id_t := IdentityMorphism( D, Ob( [ 2 ] ) );
+<An identity morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
+gap> id_s_in_sym := M( id_s );                  
+<An identity morphism in Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) )>
+gap> id_t_in_sym := M( id_t );
+<An identity morphism in Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) )>
+gap> TensorProduct( id_s_in_sym, id_t_in_sym );
+<A morphism in Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) )>                                                                                            
+gap> IsEqualForMorphisms( TensorProduct( id_s_in_sym, id_t_in_sym ), M( IdentityMorphism( D, Ob( [ 1, 2 ] ) ) ) );
+false
+gap> TensorProduct( id_s, id_t ) = IdentityMorphism( D, Ob( [ 1, 2 ] ) );                                         
+true
