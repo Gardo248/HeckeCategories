@@ -240,13 +240,20 @@ function( B, i, v )
   return sv;
 end );
 
-#TODO: I think this is superfluous, this check should be done in IsWellDefined
-BindGlobal( "CheckCoxeterWord",
+# x is a word in the generators of W: a list of integers in [1..n]
+# (boolean version, used e.g. by IsWellDefinedForObjects in FreeBSCategory)
+BindGlobal( "IsCoxeterWord",
 function( W, x )
   local n;
   n := Length( CoxeterMatrix( W ) );
-  if not ForAll( x, i -> IsPosInt( i ) and i <= n ) then
-    Error( "the word must be a list of integers in [1..", n, "]" );
+  return IsList( x ) and ForAll( x, i -> IsPosInt( i ) and i <= n );
+end );
+
+# same check, raising an error (used by the constructors)
+BindGlobal( "CheckCoxeterWord",
+function( W, x )
+  if not IsCoxeterWord( W, x ) then
+    Error( "the word must be a list of integers in [1..", Length( CoxeterMatrix( W ) ), "]" );
   fi;
 end );
 

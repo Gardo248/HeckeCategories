@@ -143,66 +143,107 @@ function( s, t, m )
   return w;
 end );
 
-# Checks that x -> y with the given label is a generating morphism:
+# ---------- well-definedness ----------
+# Each check is written once as an "error-message function": it returns fail if
+# everything is fine, otherwise a string with the reason. It is used both
+# by the FreeBS_Check* functions (constructors: they raise an error with
+# the message) and by IsWellDefinedForMorphisms (it returns a boolean).
+
+# Error message for x -> y with the given label as a generating morphism
+# (fail if it is one):
 #   [ "Dot", s ]             : [s] -> [] or [] -> [s]
 #   [ "TrivalentVertex", s ] : [s,s] -> [s] or [s] -> [s,s]
 #   [ "Spider", s, t ]       : [s,t,s,...] -> [t,s,t,...] (length m_st),
 #                              only for s <> t and m_st <> infinity
-BindGlobal( "FreeBS_CheckGenerator",
+BindGlobal( "FreeBS_GeneratorErrorMessage",
 function( W, x, y, label )
   local M, n, s, t, m;
   M := CoxeterMatrix( W );
   n := Length( M );
   if not ( IsList( label ) and Length( label ) >= 2 and IsString( label[1] ) and
            ForAll( label{[ 2 .. Length( label ) ]}, i -> IsPosInt( i ) and i <= n ) ) then
-    Error( "a label must be [ name, s ] or [ name, s, t ] with s, t in [1..", n, "]" );
+    return Concatenation( "a label must be [ name, s ] or [ name, s, t ] with s, t in [1..",
+                          String( n ), "]" );
   fi;
   s := label[2];
   if label[1] = "Dot" and Length( label ) = 2 then
     if not [ x, y ] in [ [ [ s ], [ ] ], [ [ ], [ s ] ] ] then
-      Error( "a Dot of colour ", s, " goes [ ", s, " ] -> [ ] or [ ] -> [ ", s, " ]" );
+      return Concatenation( "a Dot of colour ", String( s ), " goes [ ", String( s ),
+                            " ] -> [ ] or [ ] -> [ ", String( s ), " ]" );
     fi;
   elif label[1] = "TrivalentVertex" and Length( label ) = 2 then
     if not [ x, y ] in [ [ [ s, s ], [ s ] ], [ [ s ], [ s, s ] ] ] then
-      Error( "a TrivalentVertex of colour ", s, " goes [ ", s, ", ", s, " ] -> [ ", s,
-             " ] or [ ", s, " ] -> [ ", s, ", ", s, " ]" );
+      return Concatenation( "a TrivalentVertex of colour ", String( s ), " goes ",
+                            String( [ s, s ] ), " -> ", String( [ s ] ), " or ",
+                            String( [ s ] ), " -> ", String( [ s, s ] ) );
     fi;
   elif label[1] = "Spider" and Length( label ) = 3 then
     t := label[3];
     if s = t then
-      Error( "a Spider needs two distinct colours" );
+      return "a Spider needs two distinct colours";
     fi;
     m := M[s][t];
     if m = infinity then
-      Error( "there is no Spider for m_st = infinity" );
+      return "there is no Spider for m_st = infinity";
     fi;
     if x <> FreeBS_AlternatingWord( s, t, m ) or y <> FreeBS_AlternatingWord( t, s, m ) then
-      Error( "a Spider [ \"Spider\", ", s, ", ", t, " ] goes ",
-             FreeBS_AlternatingWord( s, t, m ), " -> ", FreeBS_AlternatingWord( t, s, m ) );
+      return Concatenation( "a Spider [ \"Spider\", ", String( s ), ", ", String( t ), " ] goes ",
+                            String( FreeBS_AlternatingWord( s, t, m ) ), " -> ",
+                            String( FreeBS_AlternatingWord( t, s, m ) ) );
     fi;
   else
-    Error( "unknown label ", label, " (allowed: \"Dot\", \"TrivalentVertex\", \"Spider\")" );
+    return Concatenation( "unknown label ", String( label ),
+                          " (allowed: \"Dot\", \"TrivalentVertex\", \"Spider\")" );
   fi;
+  return fail;
 end );
 
-# Checks that the layers form a morphism u -> v
-BindGlobal( "FreeBS_CheckLayers",
+# Error message for the layers as a morphism u -> v (fail if they are one;
+# u, v are assumed to be words)
+BindGlobal( "FreeBS_LayersErrorMessage",
 function( W, u, layers, v )
-  local l, p, x, y;
+  local l, p, x, y, msg;
+  if not IsList( layers ) then
+    return "the layers must be a list";
+  fi;
   for l in layers do
-    if not ( IsList( l ) and Length( l ) = 4 ) then
-      Error( "a layer must be a list [ p, x, y, label ]" );
+    if not ( IsList( l ) and Length( l ) = 4 and IsList( l[2] ) and IsList( l[3] ) ) then
+      return "a layer must be a list [ p, x, y, label ]";
     fi;
     p := l[1];  x := l[2];  y := l[3];
     if not IsInt( p ) or p < 0 or p + Length( x ) > Length( u ) or
        u{[ p + 1 .. p + Length( x ) ]} <> x then
-      Error( "the layer ", l, " does not fit the word ", u );
+      return Concatenation( "the layer ", String( l ), " does not fit the word ", String( u ) );
     fi;
-    FreeBS_CheckGenerator( W, x, y, l[4] );
+    msg := FreeBS_GeneratorErrorMessage( W, x, y, l[4] );
+    if msg <> fail then
+      return msg;
+    fi;
     u := Concatenation( u{[ 1 .. p ]}, y, u{[ p + Length( x ) + 1 .. Length( u ) ]} );
   od;
   if u <> v then
-    Error( "the layers do not end in the target word" );
+    return "the layers do not end in the target word";
+  fi;
+  return fail;
+end );
+
+# Checks that x -> y with the given label is a generating morphism (error otherwise)
+BindGlobal( "FreeBS_CheckGenerator",
+function( W, x, y, label )
+  local msg;
+  msg := FreeBS_GeneratorErrorMessage( W, x, y, label );
+  if msg <> fail then
+    Error( msg );
+  fi;
+end );
+
+# Checks that the layers form a morphism u -> v (error otherwise)
+BindGlobal( "FreeBS_CheckLayers",
+function( W, u, layers, v )
+  local msg;
+  msg := FreeBS_LayersErrorMessage( W, u, layers, v );
+  if msg <> fail then
+    Error( msg );
   fi;
 end );
 
@@ -255,12 +296,14 @@ function( W )
   # x is always a list of integers in [1..length(names)]
   word_to_syn := x -> TensorProductOnListOfObjects( Syn, gen_obj{ x } );
 
+  # takes the syntactic object of Syn and returns the corresponding word (list of integers)
   syn_to_word := function( obj )
     local d;
     d := ObjectDatum( Syn, obj );
     if d[1] = "ObjectConstructor" then
       return [ Position( names, d[2][2] ) ];
     elif d[1] = "TensorProductOnListOfObjects" then
+    # we apply syn_to_word to each element of the list d[2][2] and concatenate the results
       return Concatenation( List( d[2][2], syn_to_word ) );
     elif d[1] = "TensorProductOnObjects" then
       return Concatenation( syn_to_word( d[2][2] ), syn_to_word( d[2][3] ) );
@@ -292,7 +335,7 @@ function( W )
     args := d[2];
     if op = "MorphismConstructor" then
       # the name carries the label, source and target the direction
-      return [ [ 0, syn_to_word( Source( phi ) ), syn_to_word( Range( phi ) ),
+      return [ [ 0, syn_to_word( Source( phi ) ), syn_to_word( Target( phi ) ),
                  FreeBS_LabelOfName( args[2] ) ] ];
     elif op = "IdentityMorphism" then
       return [ ];
@@ -317,7 +360,7 @@ function( W )
       factors := List( rest, function( c )
                    local w;
                    if IsCapCategoryMorphism( c ) then
-                     return [ syn_to_word( Source( c ) ), syn_to_word( Range( c ) ),
+                     return [ syn_to_word( Source( c ) ), syn_to_word( Target( c ) ),
                               syn_mor_to_layers( c ) ];
                    fi;
                    w := syn_to_word( c );
@@ -437,6 +480,19 @@ function( W )
   AddIsEqualForObjects( D, { D, a, b } -> BSWord( a ) = BSWord( b ), 1 );
   AddIsEqualForMorphisms( D, { D, a, b } -> is_equal_morphisms( a, b ), 1 );
   AddIsCongruentForMorphisms( D, { D, a, b } -> is_equal_morphisms( a, b ), 1 );
+
+  ## well-definedness: same reason (Syn installs, for EVERY boolean
+  ## operation, a function that only raises an error: a syntactic
+  ## category has no semantics to decide properties). The checks are the
+  ## same as the constructors', but return a boolean (see the error-message
+  ## functions above). Source and target first: FreeBS_LayersErrorMessage
+  ## assumes that they are words.
+  AddIsWellDefinedForObjects( D, { D, obj } -> IsCoxeterWord( W, BSWord( obj ) ), 1 );
+  AddIsWellDefinedForMorphisms( D,
+    { D, mor } -> IsCoxeterWord( W, BSWord( Source( mor ) ) ) and
+                  IsCoxeterWord( W, BSWord( Target( mor ) ) ) and
+                  FreeBS_LayersErrorMessage( W, BSWord( Source( mor ) ), BSLayers( mor ),
+                                             BSWord( Target( mor ) ) ) = fail, 1 );
 
   Finalize( D );
   return D;
