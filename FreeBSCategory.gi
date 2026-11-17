@@ -330,9 +330,9 @@ function( W )
   ## morphism of Syn -> list of layers (not yet canonical)
   syn_mor_to_layers := function( phi )
     local d, op, args, L, rest, factors;
-    d := MorphismDatum( Syn, phi );
+    d := MorphismDatum( Syn, phi );   
     op := d[1];
-    args := d[2];
+    args := d[2];                     
     if op = "MorphismConstructor" then
       # the name carries the label, source and target the direction
       return [ [ 0, syn_to_word( Source( phi ) ), syn_to_word( Target( phi ) ),
@@ -350,11 +350,14 @@ function( W )
       L := First( args, IsList );
       return Concatenation( List( Reversed( L ), syn_mor_to_layers ) );
     elif StartsWith( op, "TensorProductOn" ) then
+      # first normalize the factors (they are different for different forms of the tensor product)
       rest := args{[ 2 .. Length( args ) ]};
       if EndsWith( op, "WithGivenTensorProducts" ) then
+        # first and last are the given tensor products of source and target
         rest := rest{[ 2 .. Length( rest ) - 1 ]};
       fi;
       if Length( rest ) = 1 and IsList( rest[1] ) then
+        # the factors are given as a list
         rest := rest[1];
       fi;
       factors := List( rest, function( c )
@@ -420,7 +423,9 @@ function( W )
     return CreateCapCategoryObjectWithAttributes( D, BSWord, x );
   end;
 
-  object_datum := { D, obj } -> BSWord( obj );
+  object_datum := function( D, obj )
+    return BSWord( obj );
+  end;
 
   ## morphism of D with datum the list of layers; the layers are checked
   ## and stored as they come: the canonical form is computed only when
@@ -430,13 +435,19 @@ function( W )
     return CreateCapCategoryMorphismWithAttributes( D, S, T, BSLayers, layers );
   end;
 
-  morphism_datum := { D, mor } -> BSLayers( mor );
+  morphism_datum := function( D, mor )
+    return BSLayers( mor );
+  end;
 
   ## word -> object of Syn
-  modeling_tower_object_constructor := { D, x } -> word_to_syn( x );
+  modeling_tower_object_constructor := function( D, x )
+    return word_to_syn( x );
+  end;
 
   ## object of Syn -> word
-  modeling_tower_object_datum := { D, obj } -> syn_to_word( obj );
+  modeling_tower_object_datum := function( D, obj )
+    return syn_to_word( obj );
+  end;
 
   ## list of layers -> morphism of Syn (layers_to_syn also returns the
   ## target word, not needed here)
@@ -447,7 +458,9 @@ function( W )
   end;
 
   ## morphism of Syn -> list of layers
-  modeling_tower_morphism_datum := { D, phi } -> syn_mor_to_layers( phi );
+  modeling_tower_morphism_datum := function( D, phi )
+    return syn_mor_to_layers( phi );
+  end;
 
   ## The fields of the record are defined above as local variables and only
   ## listed here (style of FiniteCocompletions/FiniteStrictProductCompletion.gi).
