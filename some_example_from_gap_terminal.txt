@@ -20,7 +20,7 @@ gap> SynD := ModelingCategory( D );
 Syn( FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] ) )
 gap> SplitVertex( D, 1 );                                                                                                                  
 <A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
-gap> PreCompose( PreCompose( SplitVertex( D, 1 ), TensorProduct( EndDot( D, 1 ), IdentityMorphism( D, Ob( [ 1 ] ) ) ) ), SplitVertex( D, 1 ) ); 
+gap> PreCompose( PreCompose( SplitVertex( D, 1 ), TensorProduct( LowerDot( D, 1 ), IdentityMorphism( D, Ob( [ 1 ] ) ) ) ), SplitVertex( D, 1 ) ); 
 <A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
 gap> #associativity:
 gap> #(f \circ g) \circ h and f \circ (g \circ h) are equal in D but not in Syn
@@ -28,7 +28,7 @@ gap> f := SplitVertex( D, 1 );
 <A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
 gap> h := SplitVertex( D, 1 );
 <A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
-gap> g := TensorProduct( EndDot( D, 1 ), IdentityMorphism( D, Ds ) );
+gap> g := TensorProduct( LowerDot( D, 1 ), IdentityMorphism( D, Ds ) );
 <A morphism in FreeBSCategory( [ [ 1, 3 ], [ 3, 1 ] ] )>
 gap> PreCompose( h, PreCompose( g, h ) ) = PreCompose( PreCompose( h, g ), f );
 true

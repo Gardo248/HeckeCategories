@@ -11,7 +11,7 @@
 # Loaded with FreeBSCategory.g (packages + coxeter.g + these files).
 # ALL the arithmetic is exact (integers and cyclotomic numbers).
 #
-# Objects:   words x (datum: the list x, attribute BSWord).
+# Objects:   words x (datum: the list x, attribute BSUnderlyingWord).
 # Morphisms: generated under composition and tensor product by the
 #            generating morphisms, identified by a
 #            label; source and target fix the direction:
@@ -48,7 +48,7 @@ DeclareCategory( "IsMorphismInFreeBSCategory",
                  IsCellInFreeBSCategory and IsCapCategoryMorphism );
 
 DeclareAttribute( "UnderlyingCoxeterGroup", IsFreeBSCategory );
-DeclareAttribute( "BSWord", IsObjectInFreeBSCategory );
+DeclareAttribute( "BSUnderlyingWord", IsObjectInFreeBSCategory );
 DeclareAttribute( "BSLayers", IsMorphismInFreeBSCategory );
 # Canonical form of BSLayers
 DeclareAttribute( "BSCanonicalLayers", IsMorphismInFreeBSCategory );
@@ -63,9 +63,9 @@ DeclareOperation( "BSObject", [ IsFreeBSCategory, IsList ] );
 DeclareOperation( "BSGeneratingMorphism",
                   [ IsFreeBSCategory, IsList, IsList, IsList ] );
 
-# Dots of colour s: [] -> [s] and [s] -> []
-DeclareOperation( "StartDot", [ IsFreeBSCategory, IsPosInt ] );
-DeclareOperation( "EndDot", [ IsFreeBSCategory, IsPosInt ] );
+# Dots of colour s: UpperDot [] -> [s], LowerDot [s] -> []
+DeclareOperation( "UpperDot", [ IsFreeBSCategory, IsPosInt ] );
+DeclareOperation( "LowerDot", [ IsFreeBSCategory, IsPosInt ] );
 
 # Trivalent vertices of colour s: [s] -> [s,s] and [s,s] -> [s]
 DeclareOperation( "SplitVertex", [ IsFreeBSCategory, IsPosInt ] );
@@ -74,7 +74,7 @@ DeclareOperation( "MergeVertex", [ IsFreeBSCategory, IsPosInt ] );
 # The 2m_st-valent vertex [s,t,s,...] -> [t,s,t,...]
 DeclareOperation( "SpiderMorphism", [ IsFreeBSCategory, IsPosInt, IsPosInt ] );
 
-# All the generating morphisms: for each s StartDot, EndDot,
+# All the generating morphisms: for each s UpperDot, LowerDot,
 # SplitVertex, MergeVertex; then SpiderMorphism( s, t ) for the
 # ordered pairs s <> t with m_st <> infinity
 DeclareAttribute( "BSGeneratingMorphisms", IsFreeBSCategory );

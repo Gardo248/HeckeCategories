@@ -420,18 +420,18 @@ function( W )
 
   ## object of D with datum the word x
   object_constructor := function( D, x )
-    return CreateCapCategoryObjectWithAttributes( D, BSWord, x );
+    return CreateCapCategoryObjectWithAttributes( D, BSUnderlyingWord, x );
   end;
 
   object_datum := function( D, obj )
-    return BSWord( obj );
+    return BSUnderlyingWord( obj );
   end;
 
   ## morphism of D with datum the list of layers; the layers are checked
   ## and stored as they come: the canonical form is computed only when
   ## comparing (BSCanonicalLayers)
   morphism_constructor := function( D, S, layers, T )
-    FreeBS_CheckLayers( W, BSWord( S ), layers, BSWord( T ) );
+    FreeBS_CheckLayers( W, BSUnderlyingWord( S ), layers, BSUnderlyingWord( T ) );
     return CreateCapCategoryMorphismWithAttributes( D, S, T, BSLayers, layers );
   end;
 
@@ -490,9 +490,21 @@ function( W )
   ##  raises an error)
   ## (weight 1 < 50 = weight of the functions inherited from Syn, otherwise
   ##  CAP ignores these)
-  AddIsEqualForObjects( D, { D, a, b } -> BSWord( a ) = BSWord( b ), 1 );
-  AddIsEqualForMorphisms( D, { D, a, b } -> is_equal_morphisms( a, b ), 1 );
-  AddIsCongruentForMorphisms( D, { D, a, b } -> is_equal_morphisms( a, b ), 1 );
+  ## Q for Mohamed: IsCongruent and IsEqual use the same function here, both checks the mathematical equivalence of morphisms. Should we check IsEqual just for the data structure (equality for the list of layers) and IsCongruent for the mathematical equivalence (canonical form)?
+AddIsEqualForObjects( D,
+    function( D, a, b )
+      return BSUnderlyingWord( a ) = BSUnderlyingWord( b );
+    end, 1 );
+
+  AddIsEqualForMorphisms( D,
+    function( D, a, b )
+      return is_equal_morphisms( a, b );
+    end, 1 );
+
+  AddIsCongruentForMorphisms( D,
+    function( D, a, b )
+      return is_equal_morphisms( a, b );
+    end, 1 );
 
   ## well-definedness: same reason (Syn installs, for EVERY boolean
   ## operation, a function that only raises an error: a syntactic
@@ -500,12 +512,20 @@ function( W )
   ## same as the constructors', but return a boolean (see the error-message
   ## functions above). Source and target first: FreeBS_LayersErrorMessage
   ## assumes that they are words.
-  AddIsWellDefinedForObjects( D, { D, obj } -> IsCoxeterWord( W, BSWord( obj ) ), 1 );
+  AddIsWellDefinedForObjects( D,
+    function( D, obj )
+      return IsCoxeterWord( W, BSUnderlyingWord( obj ) );
+  end, 1 );
+
   AddIsWellDefinedForMorphisms( D,
-    { D, mor } -> IsCoxeterWord( W, BSWord( Source( mor ) ) ) and
-                  IsCoxeterWord( W, BSWord( Target( mor ) ) ) and
-                  FreeBS_LayersErrorMessage( W, BSWord( Source( mor ) ), BSLayers( mor ),
-                                             BSWord( Target( mor ) ) ) = fail, 1 );
+    function( D, mor )
+      local u, v;
+      u := BSUnderlyingWord( Source( mor ) );
+      v := BSUnderlyingWord( Target( mor ) );
+      return IsCoxeterWord( W, u ) and
+             IsCoxeterWord( W, v ) and
+             FreeBS_LayersErrorMessage( W, u, BSLayers( mor ), v ) = fail;
+    end, 1 );
 
   Finalize( D );
   return D;
@@ -527,12 +547,12 @@ function( D, x, label, y )
   return MorphismConstructor( D, BSObject( D, x ), [ [ 0, x, y, label ] ], BSObject( D, y ) );
 end );
 
-InstallMethod( StartDot,
+InstallMethod( UpperDot,
   "for a free BS category and a colour",
   [ IsFreeBSCategory, IsPosInt ],
   { D, s } -> BSGeneratingMorphism( D, [ ], [ "Dot", s ], [ s ] ) );
 
-InstallMethod( EndDot,
+InstallMethod( LowerDot,
   "for a free BS category and a colour",
   [ IsFreeBSCategory, IsPosInt ],
   { D, s } -> BSGeneratingMorphism( D, [ s ], [ "Dot", s ], [ ] ) );
@@ -570,7 +590,7 @@ function( D )
   n := Length( M );
   res := [ ];
   for s in [ 1 .. n ] do
-    Append( res, [ StartDot( D, s ), EndDot( D, s ), SplitVertex( D, s ), MergeVertex( D, s ) ] );
+    Append( res, [ UpperDot( D, s ), LowerDot( D, s ), SplitVertex( D, s ), MergeVertex( D, s ) ] );
   od;
   for s in [ 1 .. n ] do
     for t in [ 1 .. n ] do

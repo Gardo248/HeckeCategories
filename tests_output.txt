@@ -1,12 +1,2 @@
-(the "Error, ..." lines printed below are EXPECTED errors, caught by the tests\
-)
-Error, a Spider needs two distinct colours s, t with m_st <> infinity
-Error, a Spider needs two distinct colours s, t with m_st <> infinity
-Error, unknown label [ "Foo", 1 ] (allowed: "Dot", "TrivalentVertex", "Spider")
-Error, a Dot of colour 1 goes [ 1 ] -> [ ] or [ ] -> [ 1 ]
-Error, a Spider [ "Spider", 2, 1 ] goes [ 2, 1, 2 ] -> [ 1, 2, 1 ]
-Error, the word must be a list of integers in [1..2]
-Error, a TrivalentVertex of colour 1 goes [ 1, 1 ] -> [ 1 ] or [ 1 ] -> [ 1, 1 ]
-Error, the layers do not end in the target word
 
-96 / 96 tests passed -- ALL OK
+82 / 82 tests passed -- ALL OK
