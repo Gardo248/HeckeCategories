@@ -56,11 +56,12 @@ DeclareAttribute( "BSCanonicalLayers", IsMorphismInFreeBSCategory );
 # Constructor of the category
 DeclareAttribute( "FreeBSCategory", IsCoxeterGroup );
 
+# The object corresponding to the word x
+DeclareOperation( "BSObject", [ IsFreeBSCategory, IsList ] );
+
 # All the generating morphisms: for each s UpperDot, LowerDot,
 # SplitVertex, MergeVertex; then SpiderMorphism( s, t ) for the
 # ordered pairs s <> t with m_st <> infinity
-# The object corresponding to the word x
-DeclareOperation( "BSObject", [ IsFreeBSCategory, IsList ] );
 
 # The generating morphism x -> y with the given label (see above)
 DeclareOperation( "BSGeneratingMorphism",
