@@ -56,6 +56,9 @@ DeclareAttribute( "BSCanonicalLayers", IsMorphismInFreeBSCategory );
 # Constructor of the category
 DeclareAttribute( "FreeBSCategory", IsCoxeterGroup );
 
+# All the generating morphisms: for each s UpperDot, LowerDot,
+# SplitVertex, MergeVertex; then SpiderMorphism( s, t ) for the
+# ordered pairs s <> t with m_st <> infinity
 # The object corresponding to the word x
 DeclareOperation( "BSObject", [ IsFreeBSCategory, IsList ] );
 
@@ -74,9 +77,6 @@ DeclareOperation( "MergeVertex", [ IsFreeBSCategory, IsPosInt ] );
 # The 2m_st-valent vertex [s,t,s,...] -> [t,s,t,...]
 DeclareOperation( "SpiderMorphism", [ IsFreeBSCategory, IsPosInt, IsPosInt ] );
 
-# All the generating morphisms: for each s UpperDot, LowerDot,
-# SplitVertex, MergeVertex; then SpiderMorphism( s, t ) for the
-# ordered pairs s <> t with m_st <> infinity
 DeclareAttribute( "BSGeneratingMorphisms", IsFreeBSCategory );
 
 # Canonical form of a list of layers (see above)

@@ -1,0 +1,10 @@
+Error, file "FreeBSCategoryTests.g" must exist and be readable at /home/mattia/gap-4.15.1/lib/files.gi:207 called from
+Read( f ); at /home/mattia/gap-4.15.1/lib/init.g:921 called from
+ProcessInitFiles( GAPInfo.InitFiles 
+ ); at /home/mattia/gap-4.15.1/lib/init.g:927 called from
+func(  ); at /home/mattia/gap-4.15.1/lib/system.g:256 called from
+<function "InstallAndCallPostRestore">( <arguments> )
+ called from read-eval loop at /home/mattia/gap-4.15.1/lib/init.g:928
+you can 'quit;' to quit to outer loop, or
+you can 'return;' to continue
+[1m[34m[0m[31m
